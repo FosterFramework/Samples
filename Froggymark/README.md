@@ -1,4 +1,6 @@
 ﻿# Froggymark
+![Screenshot](screenshot.png "Screenshot")
+
 This serves as a naive test to find just how fast sprites can be pushed to the gpu. 
 
 **Use Release build without debugger for best results.**

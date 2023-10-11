@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TinyLink", "TinyLink\TinyLink.csproj", "{AA3B2D39-7BF3-4CCD-8F19-672474E71D41}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Basic", "Basic\Basic.csproj", "{674B10E5-82F6-4A6A-8C00-83221996CD1E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shapes", "Shapes\Shapes.csproj", "{674B10E5-82F6-4A6A-8C00-83221996CD1E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Froggymark", "Froggymark\Froggymark.csproj", "{C8D5CC24-2C60-4E8E-B246-8E7E13E31873}"
 EndProject
