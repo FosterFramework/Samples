@@ -19,7 +19,7 @@ class Game : Module
 
 	private readonly Batcher batch = new();
 	private readonly Texture texture = new Texture(new Image(128, 128, Color.Blue));
-	private Vector2 pos = new();
+	private Vector2 pos = new(128, 128);
 	private Vector2 speed = new();
 
 	public override void Update()
