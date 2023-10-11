@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TinyLink", "TinyLink\TinyLink.csproj", "{AA3B2D39-7BF3-4CCD-8F19-672474E71D41}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Basic", "Basic\Basic.csproj", "{674B10E5-82F6-4A6A-8C00-83221996CD1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Froggymark", "Froggymark\Froggymark.csproj", "{C8D5CC24-2C60-4E8E-B246-8E7E13E31873}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FosterImGui", "ImGui\FosterImGui.csproj", "{ED95B28D-2822-4F3D-B1C5-591658BB2380}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{674B10E5-82F6-4A6A-8C00-83221996CD1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{674B10E5-82F6-4A6A-8C00-83221996CD1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{674B10E5-82F6-4A6A-8C00-83221996CD1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{674B10E5-82F6-4A6A-8C00-83221996CD1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8D5CC24-2C60-4E8E-B246-8E7E13E31873}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8D5CC24-2C60-4E8E-B246-8E7E13E31873}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8D5CC24-2C60-4E8E-B246-8E7E13E31873}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8D5CC24-2C60-4E8E-B246-8E7E13E31873}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED95B28D-2822-4F3D-B1C5-591658BB2380}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED95B28D-2822-4F3D-B1C5-591658BB2380}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED95B28D-2822-4F3D-B1C5-591658BB2380}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED95B28D-2822-4F3D-B1C5-591658BB2380}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA3B2D39-7BF3-4CCD-8F19-672474E71D41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA3B2D39-7BF3-4CCD-8F19-672474E71D41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA3B2D39-7BF3-4CCD-8F19-672474E71D41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA3B2D39-7BF3-4CCD-8F19-672474E71D41}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
