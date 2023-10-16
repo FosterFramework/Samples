@@ -14,4 +14,10 @@
     <PackageReference Include="ImGui.NET" Version="1.89.9.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="button.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

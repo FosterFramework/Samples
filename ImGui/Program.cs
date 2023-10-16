@@ -15,6 +15,8 @@ class Program
 
 class Editor : Module
 {
+	private readonly Texture image = new Texture(new Image("button.png"));
+
 	public override void Startup()
 	{
 		Renderer.Startup();
@@ -32,15 +34,28 @@ class Editor : Module
 		ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Appearing);
 		if (ImGui.Begin("Hello Foster x Dear ImGui"))
 		{
+			// show an Image button
+			var imageId = Renderer.GetTextureID(image);
+			if (ImGui.ImageButton("Image", imageId, new Vector2(32, 32)))
+				ImGui.OpenPopup("Image Button");
+
+			// image buttton popup
+			if (ImGui.BeginPopup("Image Button"))
+			{
+				ImGui.Text("You pressed the Image Button!");
+				ImGui.EndPopup();
+			}
+
+			// custom sprite batcher inside imgui window
 			ImGui.Text("Some Foster Sprite Batching:");
 			Renderer.BeginBatch(out var batch, out var bounds);
 
 			batch.CheckeredPattern(bounds, 16, 16, Color.DarkGray, Color.Gray);
 			batch.Circle(bounds.Center, 32, 16, Color.Red);
 
-			Renderer.EndBatch();
-			ImGui.End();
+			Renderer.EndBatch();			
 		}
+		ImGui.End();
 
 		ImGui.ShowDemoWindow();
 
