@@ -31,19 +31,96 @@ public static class Renderer
 		(ImGuiKey.Space, Keys.Space),
 		(ImGuiKey.Enter, Keys.Enter),
 		(ImGuiKey.Escape, Keys.Escape),
-		(ImGuiKey.KeypadEnter, Keys.KeypadEnter),
+		(ImGuiKey.LeftCtrl, Keys.LeftControl),
+		(ImGuiKey.LeftShift, Keys.LeftShift),
+		(ImGuiKey.LeftAlt, Keys.LeftAlt),
+		(ImGuiKey.LeftSuper, Keys.LeftOS),
+		(ImGuiKey.RightCtrl, Keys.RightControl),
+		(ImGuiKey.RightShift, Keys.RightShift),
+		(ImGuiKey.RightAlt, Keys.RightAlt),
+		(ImGuiKey.RightSuper, Keys.RightOS),
+		(ImGuiKey.Menu, Keys.Menu),
+		(ImGuiKey._0, Keys.D0),
+		(ImGuiKey._1, Keys.D1),
+		(ImGuiKey._2, Keys.D2),
+		(ImGuiKey._3, Keys.D3),
+		(ImGuiKey._4, Keys.D4),
+		(ImGuiKey._5, Keys.D5),
+		(ImGuiKey._6, Keys.D6),
+		(ImGuiKey._7, Keys.D7),
+		(ImGuiKey._8, Keys.D8),
+		(ImGuiKey._9, Keys.D9),
 		(ImGuiKey.A, Keys.A),
+		(ImGuiKey.B, Keys.B),
 		(ImGuiKey.C, Keys.C),
+		(ImGuiKey.D, Keys.D),
+		(ImGuiKey.E, Keys.E),
+		(ImGuiKey.F, Keys.F),
+		(ImGuiKey.G, Keys.G),
+		(ImGuiKey.H, Keys.H),
+		(ImGuiKey.I, Keys.I),
+		(ImGuiKey.J, Keys.J),
+		(ImGuiKey.K, Keys.K),
+		(ImGuiKey.L, Keys.L),
+		(ImGuiKey.M, Keys.M),
+		(ImGuiKey.N, Keys.N),
+		(ImGuiKey.O, Keys.O),
+		(ImGuiKey.P, Keys.P),
+		(ImGuiKey.Q, Keys.Q),
+		(ImGuiKey.R, Keys.R),
+		(ImGuiKey.S, Keys.S),
+		(ImGuiKey.T, Keys.T),
+		(ImGuiKey.U, Keys.U),
 		(ImGuiKey.V, Keys.V),
+		(ImGuiKey.W, Keys.W),
 		(ImGuiKey.X, Keys.X),
 		(ImGuiKey.Y, Keys.Y),
 		(ImGuiKey.Z, Keys.Z),
-		(ImGuiKey.ModCtrl, Keys.LeftControl),
-		(ImGuiKey.ModCtrl, Keys.RightControl),
-		(ImGuiKey.ModShift, Keys.LeftShift),
-		(ImGuiKey.ModShift, Keys.RightShift),
-		(ImGuiKey.ModAlt, Keys.LeftAlt),
-		(ImGuiKey.ModAlt, Keys.RightAlt),
+		(ImGuiKey.F1, Keys.F1),
+		(ImGuiKey.F2, Keys.F2),
+		(ImGuiKey.F3, Keys.F3),
+		(ImGuiKey.F4, Keys.F4),
+		(ImGuiKey.F5, Keys.F5),
+		(ImGuiKey.F6, Keys.F6),
+		(ImGuiKey.F7, Keys.F7),
+		(ImGuiKey.F8, Keys.F8),
+		(ImGuiKey.F9, Keys.F9),
+		(ImGuiKey.F10, Keys.F10),
+		(ImGuiKey.F11, Keys.F11),
+		(ImGuiKey.F12, Keys.F12),
+		(ImGuiKey.Apostrophe, Keys.Apostrophe),
+		(ImGuiKey.Comma, Keys.Comma),
+		(ImGuiKey.Minus, Keys.Minus),
+		(ImGuiKey.Period, Keys.Period),
+		(ImGuiKey.Slash, Keys.Slash),
+		(ImGuiKey.Semicolon, Keys.Semicolon),
+		(ImGuiKey.Equal, Keys.Equals),
+		(ImGuiKey.LeftBracket, Keys.LeftBracket),
+		(ImGuiKey.Backslash, Keys.Backslash),
+		(ImGuiKey.RightBracket, Keys.RightBracket),
+		(ImGuiKey.GraveAccent, Keys.Tilde),
+		(ImGuiKey.CapsLock, Keys.Capslock),
+		(ImGuiKey.ScrollLock, Keys.ScrollLock),
+		(ImGuiKey.NumLock, Keys.Numlock),
+		(ImGuiKey.PrintScreen, Keys.PrintScreen),
+		(ImGuiKey.Pause, Keys.Pause),
+		(ImGuiKey.Keypad0, Keys.Keypad0),
+		(ImGuiKey.Keypad1, Keys.Keypad1),
+		(ImGuiKey.Keypad2, Keys.Keypad2),
+		(ImGuiKey.Keypad3, Keys.Keypad3),
+		(ImGuiKey.Keypad4, Keys.Keypad4),
+		(ImGuiKey.Keypad5, Keys.Keypad5),
+		(ImGuiKey.Keypad6, Keys.Keypad6),
+		(ImGuiKey.Keypad7, Keys.Keypad7),
+		(ImGuiKey.Keypad8, Keys.Keypad8),
+		(ImGuiKey.Keypad9, Keys.Keypad9),
+		(ImGuiKey.KeypadDecimal, Keys.KeypadPeroid),
+		(ImGuiKey.KeypadDivide, Keys.KeypadDivide),
+		(ImGuiKey.KeypadMultiply, Keys.KeypadMultiply),
+		(ImGuiKey.KeypadSubtract, Keys.KeypadMinus),
+		(ImGuiKey.KeypadAdd, Keys.KeypadPlus),
+		(ImGuiKey.KeypadEnter, Keys.KeypadEnter),
+		(ImGuiKey.KeypadEqual, Keys.KeypadEquals),
 	};
 
 	/// <summary>
@@ -113,6 +190,10 @@ public static class Renderer
 		// clear textures for the next frame
 		boundTextures.Clear();
 
+		// clear batches
+		userBatches.ForEach(Pool<Batcher>.Return);
+		userBatches.Clear();
+
 		// assign font texture again
 		var io = ImGui.GetIO();
 		io.Fonts.SetTexID(GetTextureID(fontTexture));
@@ -121,12 +202,12 @@ public static class Renderer
 		io.DeltaTime = Time.Delta;
 		io.DisplaySize = new Vector2(App.WidthInPixels / Scale, App.HeightInPixels / Scale);
 		io.DisplayFramebufferScale = Vector2.One * Scale;
-		io.MousePos = MousePosition;
-		io.MouseDown[0] = Input.Mouse.LeftDown || Input.Mouse.LeftPressed;
-		io.MouseDown[1] = Input.Mouse.RightDown || Input.Mouse.RightPressed;
-		io.MouseDown[2] = Input.Mouse.MiddleDown || Input.Mouse.MiddlePressed;
-		io.MouseWheel = Input.Mouse.Wheel.Y;
-		io.MouseWheelH = Input.Mouse.Wheel.X;
+
+		io.AddMousePosEvent(MousePosition.X, MousePosition.Y);
+		io.AddMouseButtonEvent(0, Input.Mouse.LeftDown || Input.Mouse.LeftPressed);
+		io.AddMouseButtonEvent(1, Input.Mouse.RightDown || Input.Mouse.RightPressed);
+		io.AddMouseButtonEvent(2, Input.Mouse.MiddleDown || Input.Mouse.MiddlePressed);
+		io.AddMouseWheelEvent(Input.Mouse.Wheel.X, Input.Mouse.Wheel.Y);
 
 		foreach (var k in keys)
 		{
@@ -136,15 +217,20 @@ public static class Renderer
 				io.AddKeyEvent(k.Item1, false);
 		}
 
+		io.AddKeyEvent(ImGuiKey.ModShift, Input.Keyboard.Shift);
+		io.AddKeyEvent(ImGuiKey.ModAlt, Input.Keyboard.Alt);
+		io.AddKeyEvent(ImGuiKey.ModCtrl, Input.Keyboard.Ctrl);
+		io.AddKeyEvent(ImGuiKey.ModSuper, Input.Keyboard.Down(Keys.LeftOS) || Input.Keyboard.Down(Keys.RightOS));
+
 		if (Input.Keyboard.Text.Length > 0)
 		{
-			for (int i = 0; i < Input.Keyboard.Text.Length; i ++)
+			for (int i = 0; i < Input.Keyboard.Text.Length; i++)
 				io.AddInputCharacter(Input.Keyboard.Text[i]);
 		}
 
 		ImGui.NewFrame();
 	}
-	
+
 	/// <summary>
 	/// Ends an ImGui Frame. 
 	/// Call this at the end of your Update method.
@@ -164,7 +250,7 @@ public static class Renderer
 		var screenspace = new Rect(min, max);
 
 		// get recycled batcher, add to list
-		batch = FramePool.Get<Batcher>();
+		batch = Pool<Batcher>.Get();
 		batch.Clear();
 		userBatches.Add(batch);
 
@@ -213,7 +299,7 @@ public static class Renderer
 			Matrix4x4.CreateScale(data.FramebufferScale.X, data.FramebufferScale.Y, 1.0f) *
 			Matrix4x4.CreateOrthographicOffCenter(0, size.X, size.Y, 0, 0.1f, 1000.0f);
 		material.Set("u_matrix", mat);
-		
+
 		// draw imgui buffers to the screen
 		for (int i = 0; i < data.CmdListsCount; i++)
 		{
@@ -254,7 +340,7 @@ public static class Renderer
 			}
 		}
 	}
-	
+
 	/// <summary>
 	/// Shuts down ImGui
 	/// </summary>
@@ -292,7 +378,7 @@ public static class Renderer
 				"	v_tex = a_tex;" +
 				"	v_color = a_color;\n" +
 				"}\n",
-			FragmentShader = 
+			FragmentShader =
 				"#version 330\n" +
 				"uniform sampler2D u_texture;\n" +
 				"in vec2 v_tex;\n" +
@@ -304,7 +390,7 @@ public static class Renderer
 		},
 		[Renderers.D3D11] = new()
 		{
-			VertexShader = 
+			VertexShader =
 				"cbuffer constants : register(b0)\n" +
 				"{\n" +
 				"	row_major float4x4 u_matrix;\n" +
@@ -335,7 +421,7 @@ public static class Renderer
 				"{\n" +
 				"	return u_texture.Sample(u_texture_sampler, input.texcoord) * input.color;\n" +
 				"}\n",
-			Attributes = new ShaderCreateInfo.Attribute[] { 
+			Attributes = new ShaderCreateInfo.Attribute[] {
 				new("POS", 0),
 				new("TEX", 0),
 				new("COL", 0),
