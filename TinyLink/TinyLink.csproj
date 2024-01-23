@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FosterFramework" Version="0.1.6-alpha" />
+    <PackageReference Include="FosterFramework" Version="0.1.11-alpha" />
   </ItemGroup>
 
 </Project>
