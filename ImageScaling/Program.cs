@@ -6,7 +6,7 @@ App.Run("Image Scaling", 960, 540);
 
 class Game : Module
 {
-	readonly Texture Logo = new(new Image(System.IO.Path.Join("Assets", "FosterLogo.png")));
+	readonly Texture Logo = new(new Image(Path.Join("Assets", "FosterLogo.png")));
 	readonly Batcher Batcher = new();
 
 	static RectInt Viewport => new(0, 0, App.WidthInPixels, App.HeightInPixels);
