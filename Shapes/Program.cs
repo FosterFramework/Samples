@@ -2,14 +2,12 @@
 using Foster.Framework;
 using System.Numerics;
 
-class Program
-{
-	public static void Main()
-	{
-		App.Register<Game>();
-		App.Run("Hello World", 1280, 720);
-	}
-}
+App.Run<Game>(new AppRunInfo(
+	ApplicationName: "Shapes",
+	WindowTitle: "Hello Shapes",
+	Width: 1280,
+	Height: 720
+));
 
 class Game : Module
 {
@@ -18,7 +16,7 @@ class Game : Module
 	private const float MaxSpeed = 800;
 
 	private readonly Batcher batch = new();
-	private readonly Texture texture = new Texture(new Image(128, 128, Color.Blue));
+	private readonly Texture texture = new(new Image(128, 128, Color.Blue));
 	private Vector2 pos = new(128, 128);
 	private Vector2 speed = new();
 
@@ -51,13 +49,19 @@ class Game : Module
 
 	public override void Render()
 	{
-		Graphics.Clear(0x44aa77);
+		App.Clear(new Color(
+			Input.Mouse.X / App.WidthInPixels,
+			Input.Mouse.Y / App.HeightInPixels,
+			0.25f,
+			1.0f
+		));
 
 		batch.PushMatrix(
 			new Vector2(App.WidthInPixels, App.HeightInPixels) / 2,
 			Vector2.One,
 			new Vector2(texture.Width, texture.Height) / 2,
 			(float)Time.Duration.TotalSeconds * 4.0f);
+
 		batch.Image(texture, Vector2.Zero, Color.White);
 		batch.PopMatrix();
 

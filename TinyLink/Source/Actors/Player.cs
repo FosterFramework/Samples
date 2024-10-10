@@ -182,9 +182,8 @@ public class Player : Actor
 		}
 		
 		// Start jumping
-		if (Controls.Jump.Pressed && grounded)
+		if (grounded && Controls.Jump.ConsumePress())
 		{
-			Controls.Jump.ConsumeBuffer();
 			Squish = new Vector2(0.65f, 1.4f);
 			StopX();
 			Velocity.X = input * MaxAirSpeed;
@@ -192,9 +191,8 @@ public class Player : Actor
 		}
 
 		// Begin Attack
-		if (Controls.Attack.Pressed)
+		if (Controls.Attack.ConsumePress())
 		{
-			Controls.Attack.ConsumeBuffer();
 			State = States.Attack;
 			if (grounded)
 				StopX();

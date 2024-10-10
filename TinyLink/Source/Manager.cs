@@ -8,8 +8,7 @@ class Program
 {
 	public static void Main()
 	{
-		App.Register<Manager>();
-		App.Run("TinyLink", 1280, 720);
+		App.Run<Manager>("TinyLink", 1280, 720);
 	}
 }
 
@@ -93,8 +92,8 @@ public class Manager : Module
 	{
 		get
 		{
-			var a = Vector2.Lerp(EditorOpenRect.TopLeft, GameOpenRect.TopLeft, Ease.CubeInOut(gameEase));
-			var b = Vector2.Lerp(EditorOpenRect.BottomRight, GameOpenRect.BottomRight, Ease.CubeInOut(gameEase));
+			var a = Vector2.Lerp(EditorOpenRect.TopLeft, GameOpenRect.TopLeft, Ease.Cube.InOut(gameEase));
+			var b = Vector2.Lerp(EditorOpenRect.BottomRight, GameOpenRect.BottomRight, Ease.Cube.InOut(gameEase));
 			return new Rect(a, b);
 		}
 	}
@@ -104,7 +103,7 @@ public class Manager : Module
 	/// </summary>
 	/// <value></value>
 	private Rect PaletteSlideRect => 
-		PaletteOpenRect - Vector2.UnitX * Ease.CubeInOut(gameEase) * PaletteOpenRect.Right;
+		PaletteOpenRect - Vector2.UnitX * Ease.Cube.InOut(gameEase) * PaletteOpenRect.Right;
 
 	/// <summary>
 	/// Mouse Cursor relative to Scale
@@ -142,6 +141,12 @@ public class Manager : Module
 		Factory.RegisterTypes();
 
 		game = new Game(cell);
+	}
+
+	public override void Shutdown()
+	{
+		Assets.Unload();
+		Factory.Clear();
 	}
 
 	public override void Update()
@@ -194,7 +199,7 @@ public class Manager : Module
 	public override void Render()
 	{
 		// draw the main UI first
-		Graphics.Clear(0x2e1426);
+		App.Clear(0x2e1426);
 		batcher.Render();
 
 		// draw game on top if it exists

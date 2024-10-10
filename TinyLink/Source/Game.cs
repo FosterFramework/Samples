@@ -83,7 +83,7 @@ public class Game
 		// Lerp the Camera to the new Room
 		else if (nextRoomEase < 1.0f)
 		{
-			Camera = Vector2.Lerp(room.WorldBounds.TopLeft, nextRoom.WorldBounds.TopLeft, Ease.CubeInOut(nextRoomEase));
+			Camera = Vector2.Lerp(room.WorldBounds.TopLeft, nextRoom.WorldBounds.TopLeft, Ease.Cube.InOut(nextRoomEase));
 			nextRoomEase = Calc.Approach(nextRoomEase, 1.0f, Time.Delta * 4.0f);
 		}
 		// Finished Lerping the Camera to the new room, return to normal update
@@ -143,7 +143,7 @@ public class Game
 			var center = viewport.Center;
 			var scale = Calc.Min(size.X / (float)Screen.Width, size.Y / (float)Screen.Height);
 
-			Batcher.SetSampler(new(TextureFilter.Nearest, TextureWrap.ClampToEdge, TextureWrap.ClampToEdge));
+			Batcher.SetSampler(new(TextureFilter.Nearest, TextureWrap.Clamp, TextureWrap.Clamp));
 			Batcher.Image(Screen, center, Screen.Bounds.Size / 2, Vector2.One * scale, 0, Color.White);
 			Batcher.Render();
 			Batcher.Clear();

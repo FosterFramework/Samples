@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FosterFramework" Version="0.1.11-alpha" />
-    <PackageReference Include="ImGui.NET" Version="1.89.9.2" />
+    <ProjectReference Include="../../Foster/Framework/Foster.Framework.csproj" />
+    <PackageReference Include="ImGui.NET" Version="1.91.0.1" />
   </ItemGroup>
 
   <ItemGroup>

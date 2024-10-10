@@ -17,10 +17,10 @@ public static class Controls
 
 		Jump.Buffer = 0.15f;
 		Jump.Add(Keys.X);
-		Jump.Add(0, Buttons.A);
+		Jump.Add(0, Buttons.South);
 
 		Attack.Buffer = 0.15f;
 		Attack.Add(Keys.C);
-		Attack.Add(0, Buttons.X);
+		Attack.Add(0, Buttons.West);
 	}
 }

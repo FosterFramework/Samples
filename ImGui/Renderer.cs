@@ -7,15 +7,14 @@ namespace FosterImGui;
 
 public static class Renderer
 {
-	private static readonly VertexFormat VertexFormat;
 	private static IntPtr context;
 	private static Mesh? mesh = null;
 	private static Material? material = null;
 	private static Texture? fontTexture = null;
-	private static readonly List<Texture> boundTextures = new();
-	private static readonly List<Batcher> userBatches = new();
-	private static readonly List<(ImGuiKey, Keys)> keys = new()
-	{
+	private static readonly List<Texture> boundTextures = [];
+	private static readonly List<Batcher> userBatches = [];
+	private static readonly List<(ImGuiKey, Keys)> keys =
+	[
 		(ImGuiKey.Tab, Keys.Tab),
 		(ImGuiKey.LeftArrow, Keys.Left),
 		(ImGuiKey.RightArrow, Keys.Right),
@@ -121,7 +120,7 @@ public static class Renderer
 		(ImGuiKey.KeypadAdd, Keys.KeypadPlus),
 		(ImGuiKey.KeypadEnter, Keys.KeypadEnter),
 		(ImGuiKey.KeypadEqual, Keys.KeypadEquals),
-	};
+	];
 
 	/// <summary>
 	/// UI Scaling
@@ -132,18 +131,6 @@ public static class Renderer
 	/// Mouse Position relative to ImGui elements
 	/// </summary>
 	public static Vector2 MousePosition => Input.Mouse.Position / Scale;
-
-	static Renderer()
-	{
-		int stride;
-		unsafe { stride = sizeof(ImDrawVert); }
-
-		VertexFormat = new(stride,
-			new VertexFormat.Element(0, VertexType.Float2, false),
-			new VertexFormat.Element(1, VertexType.Float2, false),
-			new VertexFormat.Element(2, VertexType.UByte4, true)
-		);
-	}
 
 	public static unsafe void Startup(string? customFontPath = null)
 	{
@@ -178,7 +165,7 @@ public static class Renderer
 
 		// create drawing resources
 		mesh = new Mesh();
-		material = new(new Shader(ShaderInfo[Graphics.Renderer]));
+		material = new(new TexturedShader());
 	}
 
 	/// <summary>
@@ -298,7 +285,7 @@ public static class Renderer
 		Matrix4x4 mat =
 			Matrix4x4.CreateScale(data.FramebufferScale.X, data.FramebufferScale.Y, 1.0f) *
 			Matrix4x4.CreateOrthographicOffCenter(0, size.X, size.Y, 0, 0.1f, 1000.0f);
-		material.Set("u_matrix", mat);
+		material.Set("Matrix", mat);
 
 		// draw imgui buffers to the screen
 		for (int i = 0; i < data.CmdListsCount; i++)
@@ -306,7 +293,8 @@ public static class Renderer
 			var list = data.CmdLists[i];
 
 			// update vertices
-			mesh.SetVertices(list.VtxBuffer.Data, list.VtxBuffer.Size, VertexFormat);
+			// TODO: do this once in one big buffer lol
+			mesh.SetVertices(list.VtxBuffer.Data, list.VtxBuffer.Size, default(PosTexColVertex).Format);
 			mesh.SetIndices(list.IdxBuffer.Data, list.IdxBuffer.Size, IndexFormat.Sixteen);
 
 			// draw each command
@@ -326,7 +314,7 @@ public static class Renderer
 					// set texture
 					var textureIndex = cmd->TextureId.ToInt32();
 					if (textureIndex < boundTextures.Count)
-						material.Set("u_texture", boundTextures[textureIndex]);
+						material.FragmentSamplers[0] = new(boundTextures[textureIndex], new());
 
 					pass.MeshIndexStart = (int)cmd->IdxOffset;
 					pass.MeshIndexCount = (int)cmd->ElemCount;
@@ -360,72 +348,4 @@ public static class Renderer
 			boundTextures.Add(texture);
 		return id;
 	}
-
-	private static Dictionary<Renderers, ShaderCreateInfo> ShaderInfo = new()
-	{
-		[Renderers.OpenGL] = new()
-		{
-			VertexShader =
-				"#version 330\n" +
-				"uniform mat4 u_matrix;" +
-				"layout(location=0) in vec2 a_position;\n" +
-				"layout(location=1) in vec2 a_tex;\n" +
-				"layout(location=2) in vec4 a_color;\n" +
-				"out vec2 v_tex;\n" +
-				"out vec4 v_color;\n" +
-				"void main() {\n" +
-				"	gl_Position = u_matrix * vec4(a_position.xy, 0, 1);\n" +
-				"	v_tex = a_tex;" +
-				"	v_color = a_color;\n" +
-				"}\n",
-			FragmentShader =
-				"#version 330\n" +
-				"uniform sampler2D u_texture;\n" +
-				"in vec2 v_tex;\n" +
-				"in vec4 v_color;\n" +
-				"out vec4 frag_color;\n" +
-				"void main() {\n" +
-				"	frag_color = texture(u_texture, v_tex.st) * v_color;\n" +
-				"}\n"
-		},
-		[Renderers.D3D11] = new()
-		{
-			VertexShader =
-				"cbuffer constants : register(b0)\n" +
-				"{\n" +
-				"	row_major float4x4 u_matrix;\n" +
-				"}\n" +
-				"struct vs_in\n" +
-				"{\n" +
-				"	float2 position : POS;\n" +
-				"	float2 texcoord : TEX;\n" +
-				"	float4 color    : COL;\n" +
-				"};\n" +
-				"struct vs_out\n" +
-				"{\n" +
-				"	float4 position : SV_POSITION;\n" +
-				"	float2 texcoord : TEX;\n" +
-				"	float4 color    : COL;\n" +
-				"};\n" +
-				"Texture2D    u_texture : register(t0);\n" +
-				"SamplerState u_texture_sampler : register(s0);\n" +
-				"vs_out vs_main(vs_in input)\n" +
-				"{\n" +
-				"	vs_out output;\n" +
-				"	output.position = mul(float4(input.position, 0.0f, 1.0f), u_matrix);\n" +
-				"	output.texcoord = input.texcoord;\n" +
-				"	output.color = input.color;\n" +
-				"	return output;\n" +
-				"}\n" +
-				"float4 ps_main(vs_out input) : SV_TARGET\n" +
-				"{\n" +
-				"	return u_texture.Sample(u_texture_sampler, input.texcoord) * input.color;\n" +
-				"}\n",
-			Attributes = new ShaderCreateInfo.Attribute[] {
-				new("POS", 0),
-				new("TEX", 0),
-				new("COL", 0),
-			}
-		},
-	};
 }
