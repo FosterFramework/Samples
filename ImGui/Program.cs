@@ -64,7 +64,7 @@ class Editor : Module
 
 	public override void Render()
 	{
-		Graphics.Clear(Color.Black);
+		App.Clear(Color.Black);
 		Renderer.Render();
 	}
 }

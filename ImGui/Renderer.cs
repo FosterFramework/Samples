@@ -234,7 +234,7 @@ public static class Renderer
 	{
 		var min = ImGui.GetCursorScreenPos();
 		var max = min + ImGui.GetContentRegionAvail();
-		var screenspace = new Rect(min, max);
+		var screenspace = Rect.Between(min, max);
 
 		// get recycled batcher, add to list
 		batch = Pool<Batcher>.Get();

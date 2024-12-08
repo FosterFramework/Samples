@@ -8,7 +8,13 @@ class Program
 {
 	public static void Main()
 	{
-		App.Run<Manager>("TinyLink", 1280, 720);
+		App.Run<Manager>(new AppRunInfo(
+			ApplicationName: "TinyLink",
+			WindowTitle: "TinyLink",
+			Width: 1280,
+			Height: 720,
+			PreferredGraphicsDriver: GraphicsDriver.OpenGL
+		));
 	}
 }
 
@@ -94,7 +100,7 @@ public class Manager : Module
 		{
 			var a = Vector2.Lerp(EditorOpenRect.TopLeft, GameOpenRect.TopLeft, Ease.Cube.InOut(gameEase));
 			var b = Vector2.Lerp(EditorOpenRect.BottomRight, GameOpenRect.BottomRight, Ease.Cube.InOut(gameEase));
-			return new Rect(a, b);
+			return Rect.Between(a, b);
 		}
 	}
 

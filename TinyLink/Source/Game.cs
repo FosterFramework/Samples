@@ -98,44 +98,42 @@ public class Game
 	public void Render(in RectInt viewport)
 	{
 		// draw gameplay to screen
+		Screen.Clear(0x150e22);
+		Batcher.PushMatrix(-(Point2)Camera + shake);
+
+		// draw actors
+		rendering.AddRange(Actors);
+		rendering.Sort((a, b) => b.Depth - a.Depth);
+		foreach (var actor in rendering)
 		{
-			Screen.Clear(0x150e22);
-			Batcher.PushMatrix(-(Point2)Camera + shake);
+			if (!actor.Visible)
+				continue;
 
-			// draw actors
-			rendering.AddRange(Actors);
-			rendering.Sort((a, b) => b.Depth - a.Depth);
-			foreach (var actor in rendering)
-			{
-				if (!actor.Visible)
-					continue;
-
-				Batcher.PushMatrix(actor.Position);
-				actor.Render(Batcher);
-				Batcher.PopMatrix();
-			}
-			rendering.Clear();
+			Batcher.PushMatrix(actor.Position);
+			actor.Render(Batcher);
 			Batcher.PopMatrix();
-
-			// draw player HP
-			if (GetFirst<Player>() is Player player)
-			{
-				Point2 pos = new(0, Height - 16);
-				Batcher.Rect(new Rect(pos.X, pos.Y + 7, 48, 4), Color.Black);
-
-				for (int i = 0; i < Player.MaxHealth; i++)
-				{
-					if (player.Health >= i + 1)
-						Batcher.Image(Assets.GetSubtexture("heart/0"), pos, Color.White);
-					else
-						Batcher.Image(Assets.GetSubtexture("heart/1"), pos, Color.White);
-					pos.X += 12;
-				}
-			}
-
-			Batcher.Render(Screen);
-			Batcher.Clear();
 		}
+		rendering.Clear();
+		Batcher.PopMatrix();
+
+		// draw player HP
+		if (GetFirst<Player>() is Player player)
+		{
+			Point2 pos = new(0, Height - 16);
+			Batcher.Rect(new Rect(pos.X, pos.Y + 7, 48, 4), Color.Black);
+
+			for (int i = 0; i < Player.MaxHealth; i++)
+			{
+				if (player.Health >= i + 1)
+					Batcher.Image(Assets.GetSubtexture("heart/0"), pos, Color.White);
+				else
+					Batcher.Image(Assets.GetSubtexture("heart/1"), pos, Color.White);
+				pos.X += 12;
+			}
+		}
+
+		Batcher.Render(Screen);
+		Batcher.Clear();
 
 		// draw screen to window
 		{
