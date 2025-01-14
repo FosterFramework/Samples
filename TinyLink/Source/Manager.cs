@@ -93,8 +93,8 @@ public class Manager : Module
 	{
 		get
 		{
-			var a = Vector2.Lerp(EditorOpenRect.TopLeft, GameOpenRect.TopLeft, Ease.CubeInOut(gameEase));
-			var b = Vector2.Lerp(EditorOpenRect.BottomRight, GameOpenRect.BottomRight, Ease.CubeInOut(gameEase));
+			var a = Vector2.Lerp(EditorOpenRect.TopLeft, GameOpenRect.TopLeft, Ease.Cube.InOut(gameEase));
+			var b = Vector2.Lerp(EditorOpenRect.BottomRight, GameOpenRect.BottomRight, Ease.Cube.InOut(gameEase));
 			return new Rect(a, b);
 		}
 	}
@@ -104,7 +104,7 @@ public class Manager : Module
 	/// </summary>
 	/// <value></value>
 	private Rect PaletteSlideRect => 
-		PaletteOpenRect - Vector2.UnitX * Ease.CubeInOut(gameEase) * PaletteOpenRect.Right;
+		PaletteOpenRect - Vector2.UnitX * Ease.Cube.InOut(gameEase) * PaletteOpenRect.Right;
 
 	/// <summary>
 	/// Mouse Cursor relative to Scale
