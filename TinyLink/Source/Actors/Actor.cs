@@ -31,6 +31,8 @@ public class Actor
 	public float IFrameTime = 0.50f;
 	public bool CollidesWithSolids = true;
 
+	public Time Time => Game.Time;
+
 	public Sprite? Sprite
 	{
 		get => sprite;

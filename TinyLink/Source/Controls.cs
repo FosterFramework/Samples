@@ -3,24 +3,24 @@ using Foster.Framework;
 
 namespace TinyLink;
 
-public static class Controls
+public class Controls(Input input)
 {
-	public static readonly VirtualStick Move = new();
-	public static readonly VirtualButton Jump = new();
-	public static readonly VirtualButton Attack = new();
+	public readonly VirtualStick Move = new(input, 
+		new StickBinding(0.2f, AxisBinding.Overlaps.TakeNewer)
+			.AddArrowKeys()
+			.AddDPad()
+			.AddLeftJoystick()
+	);
 
-	public static void Init()
-	{
-		Move.AddLeftJoystick(0, 0.2f, 0.2f);
-		Move.Add(0, Buttons.Left, Buttons.Right, Buttons.Up, Buttons.Down);
-		Move.Add(Keys.Left, Keys.Right, Keys.Up, Keys.Down);
+	public readonly VirtualAction Jump = new(input,
+		new ActionBinding()
+			.Add(Keys.X)
+			.Add(Buttons.South)
+	);
 
-		Jump.Buffer = 0.15f;
-		Jump.Add(Keys.X);
-		Jump.Add(0, Buttons.South);
-
-		Attack.Buffer = 0.15f;
-		Attack.Add(Keys.C);
-		Attack.Add(0, Buttons.West);
-	}
+	public readonly VirtualAction Attack = new(input,
+		new ActionBinding()
+			.Add(Keys.C)
+			.Add(Buttons.West)
+	);
 }

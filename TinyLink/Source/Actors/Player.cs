@@ -30,6 +30,7 @@ public class Player : Actor
 
 	public int Health = MaxHealth;
 	public States State;
+	public Controls Controls => Game.Controls;
 
 	private float stateDuration = 0;
 	private float jumpTimer = 0;

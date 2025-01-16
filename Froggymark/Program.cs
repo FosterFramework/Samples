@@ -8,16 +8,12 @@ class Program
 {
 	public static void Main()
 	{
-		App.Run<Game>(new AppRunInfo(
-			ApplicationName: "Froggymark",
-			WindowTitle: "Froggymark",
-			Width: 1280,
-			Height: 720
-		));
+		using var game = new Game();
+		game.Run();
 	}
 }
 
-class Game : Module
+class Game : App
 {
 	private const int MaxFrogs = 1_000_000;
 	private const int AddRemoveAmount = 5_000;
@@ -26,23 +22,29 @@ class Game : Module
 	private Rng rng = new(1337);
 	private int frogCount = 0;
 	private readonly Frog[] frogs = new Frog[MaxFrogs];
-	private readonly Mesh mesh = new();
+	private readonly Mesh<PosTexColVertex> mesh;
 	private readonly PosTexColVertex[] vertexArray = new PosTexColVertex[DrawBatchSize * 4];
-	private readonly Texture texture = null!;
-	private readonly Material material = null!;
-	private readonly Batcher batcher = new();
-	private readonly SpriteFont font = null!;
+	private readonly Texture texture;
+	private readonly Material material;
+	private readonly Batcher batcher;
+	private readonly SpriteFont font;
 	private readonly FrameCounter frameCounter = new();
 
-	public Game()
+	public Game() : base(new(
+		ApplicationName: "Froggymark",
+		WindowTitle: "Froggymark",
+		Width: 1280,
+		Height: 720))
 	{
-		App.VSync = true;
-		App.Resizable = false;
-		App.SetUnlockedUpdate();
+		GraphicsDevice.VSync = true;
+		Window.Resizable = false;
+		UpdateMode = UpdateMode.UnlockedStep();
 
-		texture = new Texture(new Image(Path.Join("Assets", "frog_knight.png")));
-		font = new SpriteFont(Path.Join("Assets", "monogram.ttf"), 32);
-		material = new Material(new TexturedShader());
+		mesh = new(GraphicsDevice);
+		batcher = new(GraphicsDevice);
+		texture = new Texture(GraphicsDevice, new Image(Path.Join("Assets", "frog_knight.png")));
+		font = new SpriteFont(GraphicsDevice, Path.Join("Assets", "monogram.ttf"), 32);
+		material = new Material(new TexturedShader(GraphicsDevice));
 
 		// We only need to initialize indices once, since we're only drawing quads
 		var indexArray = new int[DrawBatchSize * 6];
@@ -71,7 +73,10 @@ class Game : Module
 		}
 	}
 
-	public override void Update()
+	protected override void Startup() {}
+	protected override void Shutdown() {}
+
+	protected override void Update()
 	{
 		// Spawn frogs
 		if (Input.Mouse.LeftDown)
@@ -102,7 +107,7 @@ class Game : Module
 
 		// Update frogs
 		var halfSize = ((Vector2)texture.Size) / 2f;
-		var screenSize = new Vector2(App.WidthInPixels, App.HeightInPixels);
+		var screenSize = new Vector2(Window.WidthInPixels, Window.HeightInPixels);
 
 		for (int i = 0; i < frogCount; i++)
 		{
@@ -122,14 +127,14 @@ class Game : Module
 		}
 	}
 
-	public override void Render()
+	protected override void Render()
 	{
 		frameCounter.Update();
 
-		App.Clear(Color.White);
+		Window.Clear(Color.White);
 		
 		batcher.Text(font, $"{frogCount} Frogs : {frameCounter.FPS} FPS", new(8, -2), Color.Black);
-		batcher.Render();
+		batcher.Render(Window);
 		batcher.Clear();
 
 		// Batching/batch size is important: too low = excessive draw calls, too high = slower gpu copies
@@ -159,7 +164,7 @@ class Game : Module
 			var frog = frogs[i + from];
 			batcher.Image(texture, frog.Position, frog.Color);
 		}
-		batcher.Render();
+		batcher.Render(Window);
 		batcher.Clear();
 	}
 
@@ -189,23 +194,23 @@ class Game : Module
 			vertexArray[v + 3].Pos = frog.Position + new Vector2(0, texture.Height);
 		}
 
-		mesh.SetVertices<PosTexColVertex>(vertexArray.AsSpan(0, count * 4));
+		mesh.SetVertices(vertexArray.AsSpan(0, count * 4));
 
 		if (from == 0)
 		{
-			var matrix = Matrix4x4.CreateOrthographicOffCenter(0, App.WidthInPixels, App.HeightInPixels, 0, 0, float.MaxValue);
+			var matrix = Matrix4x4.CreateOrthographicOffCenter(0, Window.WidthInPixels, Window.HeightInPixels, 0, 0, float.MaxValue);
 			material.Set("Matrix", matrix);
 			material.FragmentSamplers[0] = new(texture, new());
 		}
 
-		DrawCommand command = new(null, mesh, material)
+		DrawCommand command = new(Window, mesh, material)
 		{
 			BlendMode = BlendMode.Premultiply,
 			MeshIndexStart = 0,
 			MeshIndexCount = count * 6
 		};
 
-		command.Submit();
+		command.Submit(GraphicsDevice);
 	}
 
 	public struct Frog

@@ -5,15 +5,17 @@ using ImGuiNET;
 
 namespace FosterImGui;
 
-public static class Renderer
+public class Renderer : IDisposable
 {
-	private static IntPtr context;
-	private static Mesh? mesh = null;
-	private static Material? material = null;
-	private static Texture? fontTexture = null;
-	private static readonly List<Texture> boundTextures = [];
-	private static readonly List<Batcher> userBatches = [];
-	private static readonly List<(ImGuiKey, Keys)> keys =
+	private readonly App app;
+	private readonly IntPtr context;
+	private readonly Mesh mesh;
+	private readonly Material material;
+	private readonly Texture fontTexture;
+	private readonly List<Texture> boundTextures = [];
+	private readonly List<Batcher> batchersUsed = [];
+	private readonly Stack<Batcher> batcherPool = [];
+	private readonly List<(ImGuiKey, Keys)> keys =
 	[
 		(ImGuiKey.Tab, Keys.Tab),
 		(ImGuiKey.LeftArrow, Keys.Left),
@@ -125,15 +127,17 @@ public static class Renderer
 	/// <summary>
 	/// UI Scaling
 	/// </summary>
-	public static float Scale = 2.0f;
+	public float Scale = 2.0f;
 
 	/// <summary>
 	/// Mouse Position relative to ImGui elements
 	/// </summary>
-	public static Vector2 MousePosition => Input.Mouse.Position / Scale;
+	public Vector2 MousePosition => app?.Input.Mouse.Position / Scale ?? Vector2.Zero;
 
-	public static unsafe void Startup(string? customFontPath = null)
+	public Renderer(App app, string? customFontPath = null)
 	{
+		this.app = app;
+
 		Debug.Assert(context == IntPtr.Zero);
 
 		// create imgui context
@@ -158,61 +162,66 @@ public static class Renderer
 		}
 
 		// create font texture
+		unsafe
 		{
 			io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bytesPerPixel);
-			fontTexture = new Texture(width, height, new ReadOnlySpan<byte>(pixelData, width * height * 4));
+			fontTexture = new Texture(app.GraphicsDevice, width, height, new ReadOnlySpan<byte>(pixelData, width * height * 4));
 		}
 
 		// create drawing resources
-		mesh = new Mesh();
-		material = new(new TexturedShader());
+		mesh = new Mesh<PosTexColVertex, ushort>(app.GraphicsDevice);
+		material = new(new TexturedShader(app.GraphicsDevice));
 	}
+
+	~Renderer() => Dispose();
 
 	/// <summary>
 	/// Begins a new ImGui Frame.
 	/// Call this at the start of your Update method.
 	/// </summary>
-	public static void BeginLayout()
+	public void BeginLayout()
 	{
+		ImGui.SetCurrentContext(context);
+
 		// clear textures for the next frame
 		boundTextures.Clear();
 
 		// clear batches
-		userBatches.ForEach(Pool<Batcher>.Return);
-		userBatches.Clear();
+		batchersUsed.ForEach(batcherPool.Push);
+		batchersUsed.Clear();
 
 		// assign font texture again
 		var io = ImGui.GetIO();
 		io.Fonts.SetTexID(GetTextureID(fontTexture));
 
 		// setup io
-		io.DeltaTime = Time.Delta;
-		io.DisplaySize = new Vector2(App.WidthInPixels / Scale, App.HeightInPixels / Scale);
+		io.DeltaTime = app.Time.Delta;
+		io.DisplaySize = new Vector2(app.Window.WidthInPixels / Scale, app.Window.HeightInPixels / Scale);
 		io.DisplayFramebufferScale = Vector2.One * Scale;
 
 		io.AddMousePosEvent(MousePosition.X, MousePosition.Y);
-		io.AddMouseButtonEvent(0, Input.Mouse.LeftDown || Input.Mouse.LeftPressed);
-		io.AddMouseButtonEvent(1, Input.Mouse.RightDown || Input.Mouse.RightPressed);
-		io.AddMouseButtonEvent(2, Input.Mouse.MiddleDown || Input.Mouse.MiddlePressed);
-		io.AddMouseWheelEvent(Input.Mouse.Wheel.X, Input.Mouse.Wheel.Y);
+		io.AddMouseButtonEvent(0, app.Input.Mouse.LeftDown || app.Input.Mouse.LeftPressed);
+		io.AddMouseButtonEvent(1, app.Input.Mouse.RightDown || app.Input.Mouse.RightPressed);
+		io.AddMouseButtonEvent(2, app.Input.Mouse.MiddleDown || app.Input.Mouse.MiddlePressed);
+		io.AddMouseWheelEvent(app.Input.Mouse.Wheel.X, app.Input.Mouse.Wheel.Y);
 
 		foreach (var k in keys)
 		{
-			if (Input.Keyboard.Pressed(k.Item2))
+			if (app.Input.Keyboard.Pressed(k.Item2))
 				io.AddKeyEvent(k.Item1, true);
-			if (Input.Keyboard.Released(k.Item2))
+			if (app.Input.Keyboard.Released(k.Item2))
 				io.AddKeyEvent(k.Item1, false);
 		}
 
-		io.AddKeyEvent(ImGuiKey.ModShift, Input.Keyboard.Shift);
-		io.AddKeyEvent(ImGuiKey.ModAlt, Input.Keyboard.Alt);
-		io.AddKeyEvent(ImGuiKey.ModCtrl, Input.Keyboard.Ctrl);
-		io.AddKeyEvent(ImGuiKey.ModSuper, Input.Keyboard.Down(Keys.LeftOS) || Input.Keyboard.Down(Keys.RightOS));
+		io.AddKeyEvent(ImGuiKey.ModShift, app.Input.Keyboard.Shift);
+		io.AddKeyEvent(ImGuiKey.ModAlt, app.Input.Keyboard.Alt);
+		io.AddKeyEvent(ImGuiKey.ModCtrl, app.Input.Keyboard.Ctrl);
+		io.AddKeyEvent(ImGuiKey.ModSuper, app.Input.Keyboard.Down(Keys.LeftOS) || app.Input.Keyboard.Down(Keys.RightOS));
 
-		if (Input.Keyboard.Text.Length > 0)
+		if (app.Input.Keyboard.Text.Length > 0)
 		{
-			for (int i = 0; i < Input.Keyboard.Text.Length; i++)
-				io.AddInputCharacter(Input.Keyboard.Text[i]);
+			for (int i = 0; i < app.Input.Keyboard.Text.Length; i++)
+				io.AddInputCharacter(app.Input.Keyboard.Text[i]);
 		}
 
 		ImGui.NewFrame();
@@ -222,27 +231,28 @@ public static class Renderer
 	/// Ends an ImGui Frame. 
 	/// Call this at the end of your Update method.
 	/// </summary>
-	public static void EndLayout()
+	public void EndLayout()
 	{
 		ImGui.Render();
+		ImGui.SetCurrentContext(nint.Zero);
 	}
 
 	/// <summary>
 	/// Begin a new Batch in an ImGui Window
 	/// </summary>
-	public static void BeginBatch(out Batcher batch, out Rect bounds)
+	public void BeginBatch(out Batcher batch, out Rect bounds)
 	{
 		var min = ImGui.GetCursorScreenPos();
 		var max = min + ImGui.GetContentRegionAvail();
 		var screenspace = Rect.Between(min, max);
 
 		// get recycled batcher, add to list
-		batch = Pool<Batcher>.Get();
+		batch = batcherPool.Count > 0 ? batcherPool.Pop() : new Batcher(app.GraphicsDevice);
 		batch.Clear();
-		userBatches.Add(batch);
+		batchersUsed.Add(batch);
 
 		// notify imgui
-		ImGui.GetWindowDrawList().AddCallback(new IntPtr(userBatches.Count), new IntPtr(0));
+		ImGui.GetWindowDrawList().AddCallback(new IntPtr(batchersUsed.Count), new IntPtr(0));
 
 		// push relative coords
 		batch.PushScissor(screenspace.Scale(Scale).Int());
@@ -255,9 +265,9 @@ public static class Renderer
 	/// <summary>
 	/// End a Batch in an ImGui Window
 	/// </summary>
-	public static void EndBatch()
+	public void EndBatch()
 	{
-		var batch = userBatches[^1];
+		var batch = batchersUsed[^1];
 		batch.PopMatrix();
 		batch.PopMatrix();
 		batch.PopScissor();
@@ -266,19 +276,18 @@ public static class Renderer
 	/// <summary>
 	/// Renders the ImGui buffers. Call this in your Render method.
 	/// </summary>
-	public static unsafe void Render()
+	public unsafe void Render()
 	{
-		if (mesh == null || material == null || material.Shader == null)
-			return;
+		ImGui.SetCurrentContext(context);
 
 		var data = ImGui.GetDrawData();
 		if (data.NativePtr == null || data.TotalVtxCount <= 0)
 			return;
 
-		var size = new Point2(App.WidthInPixels, App.HeightInPixels);
+		var size = new Point2(app.Window.WidthInPixels, app.Window.HeightInPixels);
 
 		// create pass
-		var pass = new DrawCommand(null, mesh, material);
+		var pass = new DrawCommand(app.Window, mesh, material);
 		pass.BlendMode = new BlendMode(BlendOp.Add, BlendFactor.SrcAlpha, BlendFactor.OneMinusSrcAlpha);
 
 		// setup ortho matrix
@@ -294,8 +303,8 @@ public static class Renderer
 
 			// update vertices
 			// TODO: do this once in one big buffer lol
-			mesh.SetVertices(list.VtxBuffer.Data, list.VtxBuffer.Size, default(PosTexColVertex).Format);
-			mesh.SetIndices(list.IdxBuffer.Data, list.IdxBuffer.Size, IndexFormat.Sixteen);
+			mesh.SetVertices(list.VtxBuffer.Data, list.VtxBuffer.Size);
+			mesh.SetIndices(list.IdxBuffer.Data, list.IdxBuffer.Size);
 
 			// draw each command
 			var commands = (ImDrawCmd*)list.CmdBuffer.Data;
@@ -304,9 +313,9 @@ public static class Renderer
 				if (cmd->UserCallback != IntPtr.Zero)
 				{
 					var batchIndex = cmd->UserCallback.ToInt32() - 1;
-					if (batchIndex >= 0 && batchIndex < userBatches.Count)
+					if (batchIndex >= 0 && batchIndex < batchersUsed.Count)
 					{
-						userBatches[batchIndex].Render();
+						batchersUsed[batchIndex].Render(app.Window);
 					}
 				}
 				else
@@ -323,29 +332,29 @@ public static class Renderer
 						cmd->ClipRect.Y,
 						(cmd->ClipRect.Z - cmd->ClipRect.X),
 						(cmd->ClipRect.W - cmd->ClipRect.Y)).Scale(data.FramebufferScale);
-					pass.Submit();
+					app.GraphicsDevice.Draw(pass);
 				}
 			}
 		}
-	}
 
-	/// <summary>
-	/// Shuts down ImGui
-	/// </summary>
-	public static void Shutdown()
-	{
-		ImGui.DestroyContext(context);
-		context = IntPtr.Zero;
+
+		ImGui.SetCurrentContext(nint.Zero);
 	}
 
 	/// <summary>
 	/// Gets a Texture ID to draw in ImGui
 	/// </summary>
-	public static IntPtr GetTextureID(Texture? texture)
+	public IntPtr GetTextureID(Texture? texture)
 	{
 		var id = new IntPtr(boundTextures.Count);
 		if (texture != null)
 			boundTextures.Add(texture);
 		return id;
+	}
+
+	public void Dispose()
+	{
+		GC.SuppressFinalize(this);
+		ImGui.DestroyContext(context);
 	}
 }
