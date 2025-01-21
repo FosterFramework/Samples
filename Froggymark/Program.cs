@@ -199,8 +199,8 @@ class Game : App
 		if (from == 0)
 		{
 			var matrix = Matrix4x4.CreateOrthographicOffCenter(0, Window.WidthInPixels, Window.HeightInPixels, 0, 0, float.MaxValue);
-			material.Set("Matrix", matrix);
-			material.FragmentSamplers[0] = new(texture, new());
+			material.Vertex.SetUniformBuffer(matrix);
+			material.Fragment.Samplers[0] = new(texture, new());
 		}
 
 		DrawCommand command = new(Window, mesh, material)

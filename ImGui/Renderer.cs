@@ -294,7 +294,7 @@ public class Renderer : IDisposable
 		Matrix4x4 mat =
 			Matrix4x4.CreateScale(data.FramebufferScale.X, data.FramebufferScale.Y, 1.0f) *
 			Matrix4x4.CreateOrthographicOffCenter(0, size.X, size.Y, 0, 0.1f, 1000.0f);
-		material.Set("Matrix", mat);
+		material.Vertex.SetUniformBuffer(mat);
 
 		// draw imgui buffers to the screen
 		for (int i = 0; i < data.CmdListsCount; i++)
@@ -323,7 +323,7 @@ public class Renderer : IDisposable
 					// set texture
 					var textureIndex = cmd->TextureId.ToInt32();
 					if (textureIndex < boundTextures.Count)
-						material.FragmentSamplers[0] = new(boundTextures[textureIndex], new());
+						material.Fragment.Samplers[0] = new(boundTextures[textureIndex], new());
 
 					pass.MeshIndexStart = (int)cmd->IdxOffset;
 					pass.MeshIndexCount = (int)cmd->ElemCount;
