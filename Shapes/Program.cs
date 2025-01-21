@@ -61,8 +61,8 @@ class Game : App
 	protected override void Render()
 	{
 		Window.Clear(new Color(
-			Input.Mouse.X / Window.WidthInPixels,
-			Input.Mouse.Y / Window.HeightInPixels,
+			Calc.Clamp(Input.Mouse.X / Window.WidthInPixels, 0, 1),
+			Calc.Clamp(Input.Mouse.Y / Window.HeightInPixels, 0, 1),
 			0.25f,
 			1.0f
 		));
