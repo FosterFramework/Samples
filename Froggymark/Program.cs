@@ -138,7 +138,6 @@ class Game : App
 		batcher.Clear();
 
 		// Batching/batch size is important: too low = excessive draw calls, too high = slower gpu copies
-		RenderBatchFoster(0, frogCount);
 		for (int i = 0; i < frogCount; i += DrawBatchSize)
 		{
 			var count = Math.Min(frogCount - i, DrawBatchSize);
