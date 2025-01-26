@@ -90,7 +90,7 @@ public static class Assets
 		}
 
 		// create texture file
-		Atlas = new Texture(gfx, output.Pages[0]);
+		Atlas = new Texture(gfx, output.Pages[0], name: "Atlas");
 
 		// create subtextures
 		foreach (var it in output.Entries)

@@ -39,8 +39,8 @@ public class Game
 	public Game(Manager manager, Point2 start)
 	{
 		Manager = manager;
-		Batcher = new(manager.GraphicsDevice);
-		Screen = new(manager.GraphicsDevice, Width, Height);
+		Batcher = new(manager.GraphicsDevice, name: "GameBatcher");
+		Screen = new(manager.GraphicsDevice, Width, Height, name: "GameScreen");
 		Controls = new(manager.Input);
 
 		if (Assets.Rooms.TryGetValue(start, out room))
