@@ -138,8 +138,6 @@ public class Renderer : IDisposable
 	{
 		this.app = app;
 
-		Debug.Assert(context == IntPtr.Zero);
-
 		// create imgui context
 		context = ImGui.CreateContext(null);
 		ImGui.SetCurrentContext(context);
@@ -171,16 +169,18 @@ public class Renderer : IDisposable
 		// create drawing resources
 		mesh = new Mesh<PosTexColVertex, ushort>(app.GraphicsDevice);
 		material = new(new TexturedShader(app.GraphicsDevice));
+		ImGui.SetCurrentContext(nint.Zero);
 	}
 
 	~Renderer() => Dispose();
 
 	/// <summary>
 	/// Begins a new ImGui Frame.
-	/// Call this at the start of your Update method.
+	/// ImGui methods are available between BeginLayout and EndLayout.
 	/// </summary>
 	public void BeginLayout()
 	{
+		Debug.Assert(ImGui.GetCurrentContext() == nint.Zero);
 		ImGui.SetCurrentContext(context);
 
 		// clear textures for the next frame
@@ -233,6 +233,7 @@ public class Renderer : IDisposable
 	/// </summary>
 	public void EndLayout()
 	{
+		Debug.Assert(ImGui.GetCurrentContext() == context);
 		ImGui.Render();
 		ImGui.SetCurrentContext(nint.Zero);
 	}
@@ -278,11 +279,15 @@ public class Renderer : IDisposable
 	/// </summary>
 	public unsafe void Render()
 	{
+		Debug.Assert(ImGui.GetCurrentContext() == nint.Zero);
 		ImGui.SetCurrentContext(context);
 
 		var data = ImGui.GetDrawData();
 		if (data.NativePtr == null || data.TotalVtxCount <= 0)
+		{
+			ImGui.SetCurrentContext(nint.Zero);
 			return;
+		}
 
 		var size = new Point2(app.Window.WidthInPixels, app.Window.HeightInPixels);
 
@@ -332,11 +337,15 @@ public class Renderer : IDisposable
 						cmd->ClipRect.Y,
 						(cmd->ClipRect.Z - cmd->ClipRect.X),
 						(cmd->ClipRect.W - cmd->ClipRect.Y)).Scale(data.FramebufferScale);
+
+					if (pass.Scissor.Value.Width <= 0 ||
+						pass.Scissor.Value.Height <= 0)
+						continue;
+
 					app.GraphicsDevice.Draw(pass);
 				}
 			}
 		}
-
 
 		ImGui.SetCurrentContext(nint.Zero);
 	}
