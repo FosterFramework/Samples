@@ -30,6 +30,7 @@ public class Player : Actor
 
 	public int Health = MaxHealth;
 	public States State;
+	public Controls Controls => Game.Controls;
 
 	private float stateDuration = 0;
 	private float jumpTimer = 0;
@@ -182,9 +183,8 @@ public class Player : Actor
 		}
 		
 		// Start jumping
-		if (Controls.Jump.Pressed && grounded)
+		if (grounded && Controls.Jump.ConsumePress())
 		{
-			Controls.Jump.ConsumePress();
 			Squish = new Vector2(0.65f, 1.4f);
 			StopX();
 			Velocity.X = input * MaxAirSpeed;
@@ -192,9 +192,8 @@ public class Player : Actor
 		}
 
 		// Begin Attack
-		if (Controls.Attack.Pressed)
+		if (Controls.Attack.ConsumePress())
 		{
-			Controls.Attack.ConsumePress();
 			State = States.Attack;
 			if (grounded)
 				StopX();

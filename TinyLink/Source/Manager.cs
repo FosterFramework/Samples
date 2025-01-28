@@ -8,15 +8,15 @@ class Program
 {
 	public static void Main()
 	{
-		App.Register<Manager>();
-		App.Run("TinyLink", 1280, 720);
+		using var manager = new Manager();
+		manager.Run();
 	}
 }
 
 /// <summary>
 /// Runs the Game and, when the game is not running, displays a tiny tile-based Level Editor
 /// </summary>
-public class Manager : Module
+public class Manager : App
 {
 	private const float Scale = 3.0f;
 	private const float ButtonSize = 24;
@@ -49,13 +49,13 @@ public class Manager : Module
 	/// <summary>
 	/// Sprite Batcher for general Editor visuals
 	/// </summary>
-	private readonly Batcher batcher = new();
+	private readonly Batcher batcher;
 
 	/// <summary>
 	/// Visible Space
 	/// </summary>
 	private Rect View 
-		=> new Rect(0, 0, App.WidthInPixels / Scale, App.HeightInPixels / Scale).Inflate(-ScreenPadding);
+		=> new Rect(0, 0, Window.WidthInPixels / Scale, Window.HeightInPixels / Scale).Inflate(-ScreenPadding);
 
 	/// <summary>
 	/// Toolbar Space
@@ -95,7 +95,7 @@ public class Manager : Module
 		{
 			var a = Vector2.Lerp(EditorOpenRect.TopLeft, GameOpenRect.TopLeft, Ease.Cube.InOut(gameEase));
 			var b = Vector2.Lerp(EditorOpenRect.BottomRight, GameOpenRect.BottomRight, Ease.Cube.InOut(gameEase));
-			return new Rect(a, b);
+			return Rect.Between(a, b);
 		}
 	}
 
@@ -135,26 +135,42 @@ public class Manager : Module
 	private char tileTypePlacing;
 	private bool tilePlacing;
 
-	public override void Startup()
+	public Manager() : base(new AppConfig()
 	{
-		Assets.Load();
-		Controls.Init();
-		Factory.RegisterTypes();
-
-		game = new Game(cell);
+		ApplicationName = "TinyLink",
+		WindowTitle = "TinyLink",
+		Width = 1280,
+		Height = 720
+	})
+	{
+		batcher = new(GraphicsDevice);
 	}
 
-	public override void Update()
+	protected override void Startup()
+	{
+		Assets.Load(GraphicsDevice);
+		Factory.RegisterTypes();
+
+		game = new Game(this, cell);
+	}
+
+	protected override void Shutdown()
+	{
+		Assets.Unload();
+		Factory.Clear();
+	}
+
+	protected override void Update()
 	{
 		// Misc. Hotkeys
 		if (Input.Keyboard.Pressed(Keys.F1) && game == null)
 			Reload();
 		if (Input.Keyboard.Pressed(Keys.F4))
-			App.Fullscreen = !App.Fullscreen;
+			Window.Fullscreen = !Window.Fullscreen;
 		if (Input.Keyboard.Pressed(Keys.Escape))
 		{
 			CurrentRoom?.Save();
-			App.Exit();
+			Exit();
 		}
 
 		// Run Game
@@ -191,11 +207,11 @@ public class Manager : Module
 		}
 	}
 
-	public override void Render()
+	protected override void Render()
 	{
 		// draw the main UI first
-		Graphics.Clear(0x2e1426);
-		batcher.Render();
+		Window.Clear(0x2e1426);
+		batcher.Render(Window);
 
 		// draw game on top if it exists
 		game?.Render((RectInt)(WorkspaceRect.Inflate(-BoxPadding) * Scale));
@@ -206,7 +222,7 @@ public class Manager : Module
 		Assets.Unload();
 		Factory.Clear();
 
-		Assets.Load();
+		Assets.Load(GraphicsDevice);
 		Factory.RegisterTypes();
 	}
 
@@ -280,7 +296,7 @@ public class Manager : Module
 			{
 				CurrentRoom?.Save();
 				if (CurrentRoom != null)
-					game = new Game(cell);
+					game = new Game(this, cell);
 			}
 			rect.X += rect.Width + ButtonSpacing;
 

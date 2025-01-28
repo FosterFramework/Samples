@@ -11,15 +11,21 @@ public class Game
 	public const int Rows = Height / TileSize + 1;
 	public const int TileSize = 8;
 
-	public readonly Batcher Batcher = new();
-	public readonly Target Screen = new(Width, Height);
-	public readonly List<Actor> Actors = new();
+	public readonly Manager Manager;
+	public readonly Controls Controls;
+	public readonly Batcher Batcher;
+	public readonly Target Screen;
+	public readonly List<Actor> Actors = [];
+
+	public Input Input => Manager.Input;
+	public GraphicsDevice GraphicsDevice => Manager.GraphicsDevice;
+	public Time Time => Manager.Time;
 
 	private Room? room;
 	private Room? nextRoom;
 	private float nextRoomEase;
-	private readonly List<Actor> destroying = new();
-	private readonly List<Actor> rendering = new();
+	private readonly List<Actor> destroying = [];
+	private readonly List<Actor> rendering = [];
 	private float hitstun = 0;
 	private float shaking = 0;
 	private Point2 shake;
@@ -30,8 +36,13 @@ public class Game
 	public Point2 Cell => room?.Cell ?? Point2.Zero;
 	public Room? CurrentRoom => room;
 
-	public Game(Point2 start)
+	public Game(Manager manager, Point2 start)
 	{
+		Manager = manager;
+		Batcher = new(manager.GraphicsDevice, name: "GameBatcher");
+		Screen = new(manager.GraphicsDevice, Width, Height, name: "GameScreen");
+		Controls = new(manager.Input);
+
 		if (Assets.Rooms.TryGetValue(start, out room))
 		{
 			Camera = new Vector2(room.Cell.X * Width, room.Cell.Y * Height);
@@ -98,44 +109,42 @@ public class Game
 	public void Render(in RectInt viewport)
 	{
 		// draw gameplay to screen
+		Screen.Clear(0x150e22);
+		Batcher.PushMatrix(-(Point2)Camera + shake);
+
+		// draw actors
+		rendering.AddRange(Actors);
+		rendering.Sort((a, b) => b.Depth - a.Depth);
+		foreach (var actor in rendering)
 		{
-			Screen.Clear(0x150e22);
-			Batcher.PushMatrix(-(Point2)Camera + shake);
+			if (!actor.Visible)
+				continue;
 
-			// draw actors
-			rendering.AddRange(Actors);
-			rendering.Sort((a, b) => b.Depth - a.Depth);
-			foreach (var actor in rendering)
-			{
-				if (!actor.Visible)
-					continue;
-
-				Batcher.PushMatrix(actor.Position);
-				actor.Render(Batcher);
-				Batcher.PopMatrix();
-			}
-			rendering.Clear();
+			Batcher.PushMatrix(actor.Position);
+			actor.Render(Batcher);
 			Batcher.PopMatrix();
-
-			// draw player HP
-			if (GetFirst<Player>() is Player player)
-			{
-				Point2 pos = new(0, Height - 16);
-				Batcher.Rect(new Rect(pos.X, pos.Y + 7, 48, 4), Color.Black);
-
-				for (int i = 0; i < Player.MaxHealth; i++)
-				{
-					if (player.Health >= i + 1)
-						Batcher.Image(Assets.GetSubtexture("heart/0"), pos, Color.White);
-					else
-						Batcher.Image(Assets.GetSubtexture("heart/1"), pos, Color.White);
-					pos.X += 12;
-				}
-			}
-
-			Batcher.Render(Screen);
-			Batcher.Clear();
 		}
+		rendering.Clear();
+		Batcher.PopMatrix();
+
+		// draw player HP
+		if (GetFirst<Player>() is Player player)
+		{
+			Point2 pos = new(0, Height - 16);
+			Batcher.Rect(new Rect(pos.X, pos.Y + 7, 48, 4), Color.Black);
+
+			for (int i = 0; i < Player.MaxHealth; i++)
+			{
+				if (player.Health >= i + 1)
+					Batcher.Image(Assets.GetSubtexture("heart/0"), pos, Color.White);
+				else
+					Batcher.Image(Assets.GetSubtexture("heart/1"), pos, Color.White);
+				pos.X += 12;
+			}
+		}
+
+		Batcher.Render(Screen);
+		Batcher.Clear();
 
 		// draw screen to window
 		{
@@ -143,9 +152,10 @@ public class Game
 			var center = viewport.Center;
 			var scale = Calc.Min(size.X / (float)Screen.Width, size.Y / (float)Screen.Height);
 
-			Batcher.SetSampler(new(TextureFilter.Nearest, TextureWrap.ClampToEdge, TextureWrap.ClampToEdge));
+			Batcher.PushSampler(new(TextureFilter.Nearest, TextureWrap.Clamp, TextureWrap.Clamp));
 			Batcher.Image(Screen, center, Screen.Bounds.Size / 2, Vector2.One * scale, 0, Color.White);
-			Batcher.Render();
+			Batcher.PopSampler();
+			Batcher.Render(Manager.Window);
 			Batcher.Clear();
 		}
 	}

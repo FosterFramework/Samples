@@ -34,7 +34,7 @@ public static class Assets
 		}
 	}
 
-	public static void Load()
+	public static void Load(GraphicsDevice gfx)
 	{
 		var spritesPath = Path.Join(AssetsPath, "Sprites");
 		var tilesetsPath = Path.Join(AssetsPath, "Tilesets");
@@ -42,7 +42,7 @@ public static class Assets
 		var tilesetFiles = new Dictionary<string, Aseprite>();
 
 		// load main font file
-		Font = new SpriteFont(Path.Join(AssetsPath, "Fonts", "dogica.ttf"), 8);
+		Font = new SpriteFont(gfx, Path.Join(AssetsPath, "Fonts", "dogica.ttf"), 8);
 		Font.LineGap = 4;
 
 		// get sprite files
@@ -90,7 +90,7 @@ public static class Assets
 		}
 
 		// create texture file
-		Atlas = new Texture(output.Pages[0]);
+		Atlas = new Texture(gfx, output.Pages[0], name: "Atlas");
 
 		// create subtextures
 		foreach (var it in output.Entries)

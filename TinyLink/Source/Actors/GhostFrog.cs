@@ -39,7 +39,7 @@ public class GhostFrog : Actor
 		Depth = -5;
 		Hitbox = new(new RectInt(-4, -12, 8, 12));
 		Mask = Masks.Enemy;
-		rng = new((int)Time.Duration.Ticks);
+		rng = new(Guid.NewGuid().Variant);
 		Play("sword");
 
 		stateRoutines = new[]

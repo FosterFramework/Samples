@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FosterFramework" Version="0.1.21-alpha" />
+    <ProjectReference Include="../../Foster/Framework/Foster.Framework.csproj"/>
   </ItemGroup>
 
   <ItemGroup>

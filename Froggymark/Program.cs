@@ -1,7 +1,6 @@
 ﻿using Foster.Framework;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.InteropServices;
 
 namespace Froggymark;
 
@@ -9,42 +8,43 @@ class Program
 {
 	public static void Main()
 	{
-		App.Register<Game>();
-		App.Run("Froggymark", 1280, 720);
+		using var game = new Game();
+		game.Run();
 	}
 }
 
-class Game : Module
+class Game : App
 {
 	private const int MaxFrogs = 1_000_000;
 	private const int AddRemoveAmount = 5_000;
 	private const int DrawBatchSize = 32768;
 
-	private Frog[] frogs = new Frog[MaxFrogs];
-	private int frogCount = 0;
 	private Rng rng = new(1337);
-	private Mesh mesh = new();
-	private Vertex[] vertexArray = new Vertex[DrawBatchSize * 4];
-	private Texture texture = null!;
-	private Material material = null!;
-	private Batcher batcher = new();
-	private SpriteFont font = null!;
-	private FrameCounter frameCounter = new();
+	private int frogCount = 0;
+	private readonly Frog[] frogs = new Frog[MaxFrogs];
+	private readonly Mesh<PosTexColVertex> mesh;
+	private readonly PosTexColVertex[] vertexArray = new PosTexColVertex[DrawBatchSize * 4];
+	private readonly Texture texture;
+	private readonly Material material;
+	private readonly Batcher batcher;
+	private readonly SpriteFont font;
+	private readonly FrameCounter frameCounter = new();
 
-	public override void Startup()
+	public Game() : base(new(
+		ApplicationName: "Froggymark",
+		WindowTitle: "Froggymark",
+		Width: 1280,
+		Height: 720))
 	{
-		App.VSync = true;
-		Time.FixedStep = false;
-		App.Resizable = false;
+		GraphicsDevice.VSync = true;
+		Window.Resizable = false;
+		UpdateMode = UpdateMode.UnlockedStep();
 
-		using var image = new Image(Path.Join("Assets", "frog_knight.png"));
-		//image.Premultiply();
-		texture = new Texture(image);
-
-		font = new SpriteFont(Path.Join("Assets", "monogram.ttf"), 32);
-
-		var shader = new Shader(ShaderDefinitions[Graphics.Renderer]);
-		material = new Material(shader);
+		mesh = new(GraphicsDevice);
+		batcher = new(GraphicsDevice);
+		texture = new Texture(GraphicsDevice, new Image(Path.Join("Assets", "frog_knight.png")));
+		font = new SpriteFont(GraphicsDevice, Path.Join("Assets", "monogram.ttf"), 32);
+		material = new Material(new TexturedShader(GraphicsDevice));
 
 		// We only need to initialize indices once, since we're only drawing quads
 		var indexArray = new int[DrawBatchSize * 6];
@@ -61,7 +61,7 @@ class Game : Module
 			vertexCount += 4;
 		}
 
-		mesh.SetIndices<int>(indexArray);
+		mesh.SetIndices(indexArray);
 
 		// Texture coordinates will not change, so we can initialize those
 		for (int i = 0; i < DrawBatchSize * 4; i += 4)
@@ -73,7 +73,10 @@ class Game : Module
 		}
 	}
 
-	public override void Update()
+	protected override void Startup() {}
+	protected override void Shutdown() {}
+
+	protected override void Update()
 	{
 		// Spawn frogs
 		if (Input.Mouse.LeftDown)
@@ -86,11 +89,11 @@ class Game : Module
 					frogs[frogCount].Speed.X = rng.Float(-250, 250) / 60.0f;
 					frogs[frogCount].Speed.Y = rng.Float(-250, 250) / 60.0f;
 					frogs[frogCount].Color = new Color(
-								rng.U8(50, 240),
-								rng.U8(80, 240),
-								rng.U8(100, 240),
-								255
-							);
+						rng.U8(50, 240),
+						rng.U8(80, 240),
+						rng.U8(100, 240),
+						255
+					);
 					frogCount++;
 				}
 			}
@@ -103,8 +106,8 @@ class Game : Module
 		}
 
 		// Update frogs
-		Vector2 halfSize = ((Vector2)texture.Size) / 2f;
-		Vector2 screenSize = new Vector2(App.WidthInPixels, App.HeightInPixels);
+		var halfSize = ((Vector2)texture.Size) / 2f;
+		var screenSize = new Vector2(Window.WidthInPixels, Window.HeightInPixels);
 
 		for (int i = 0; i < frogCount; i++)
 		{
@@ -124,15 +127,15 @@ class Game : Module
 		}
 	}
 
-	public override void Render()
+	protected override void Render()
 	{
 		frameCounter.Update();
 
-		Graphics.Clear(Color.White);
-
-		batcher.Clear();
+		Window.Clear(Color.White);
+		
 		batcher.Text(font, $"{frogCount} Frogs : {frameCounter.FPS} FPS", new(8, -2), Color.Black);
-		batcher.Render();
+		batcher.Render(Window);
+		batcher.Clear();
 
 		// Batching/batch size is important: too low = excessive draw calls, too high = slower gpu copies
 		for (int i = 0; i < frogCount; i += DrawBatchSize)
@@ -155,13 +158,13 @@ class Game : Module
 	/// </summary>
 	private void RenderBatchFoster(int from, int count)
 	{
-		batcher.Clear();
 		for (int i = 0; i < count; i++)
 		{
 			var frog = frogs[i + from];
 			batcher.Image(texture, frog.Position, frog.Color);
 		}
-		batcher.Render();
+		batcher.Render(Window);
+		batcher.Clear();
 	}
 
 	/// <summary>
@@ -190,24 +193,23 @@ class Game : Module
 			vertexArray[v + 3].Pos = frog.Position + new Vector2(0, texture.Height);
 		}
 
-		mesh.SetVertices<Vertex>(vertexArray.AsSpan(0, count * 4));
+		mesh.SetVertices(vertexArray.AsSpan(0, count * 4));
 
 		if (from == 0)
 		{
-			var matrix = Matrix4x4.CreateOrthographicOffCenter(0, App.WidthInPixels, App.HeightInPixels, 0, 0, float.MaxValue);
-			material.Set("u_matrix", matrix);
-			material.Set("u_texture", texture);
-			material.Set("u_texture_sampler", new TextureSampler());
+			var matrix = Matrix4x4.CreateOrthographicOffCenter(0, Window.WidthInPixels, Window.HeightInPixels, 0, 0, float.MaxValue);
+			material.Vertex.SetUniformBuffer(matrix);
+			material.Fragment.Samplers[0] = new(texture, new());
 		}
 
-		DrawCommand command = new(null, mesh, material)
+		DrawCommand command = new(Window, mesh, material)
 		{
 			BlendMode = BlendMode.Premultiply,
 			MeshIndexStart = 0,
 			MeshIndexCount = count * 6
 		};
 
-		command.Submit();
+		command.Submit(GraphicsDevice);
 	}
 
 	public struct Frog
@@ -216,54 +218,6 @@ class Game : Module
 		public Vector2 Speed;
 		public Color Color;
 	}
-
-	private static readonly VertexFormat VertexFormat = VertexFormat.Create<Vertex>(
-		new VertexFormat.Element(0, VertexType.Float2, false),
-		new VertexFormat.Element(1, VertexType.Float2, false),
-		new VertexFormat.Element(2, VertexType.UByte4, true)
-	);
-
-	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public struct Vertex : IVertex
-	{
-		public Vector2 Pos;
-		public Vector2 Tex;
-		public Color Col;
-
-		public readonly VertexFormat Format => VertexFormat;
-	}
-
-	private static Dictionary<Renderers, ShaderCreateInfo> ShaderDefinitions = new()
-	{
-		[Renderers.OpenGL] = new()
-		{
-			VertexShader =
-				"#version 330\n" +
-				"uniform mat4 u_matrix;\n" +
-				"layout(location=0) in vec2 a_position;\n" +
-				"layout(location=1) in vec2 a_tex;\n" +
-				"layout(location=2) in vec4 a_color;\n" +
-				"out vec2 v_tex;\n" +
-				"out vec4 v_col;\n" +
-				"void main(void)\n" +
-				"{\n" +
-				"	gl_Position = u_matrix * vec4(a_position.xy, 0, 1);\n" +
-				"	v_tex = a_tex;\n" +
-				"	v_col = a_color;\n" +
-				"}",
-			FragmentShader =
-				"#version 330\n" +
-				"uniform sampler2D u_texture;\n" +
-				"in vec2 v_tex;\n" +
-				"in vec4 v_col;\n" +
-				"out vec4 o_color;\n" +
-				"void main(void)\n" +
-				"{\n" +
-				"	vec4 color = texture(u_texture, v_tex);\n" +
-				"	o_color = color * v_col;\n" +
-				"}"
-		}
-	};
 }
 
 /// <summary>
