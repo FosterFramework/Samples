@@ -134,6 +134,11 @@ public class Renderer : IDisposable
 	/// </summary>
 	public Vector2 MousePosition => app?.Input.Mouse.Position / Scale ?? Vector2.Zero;
 
+	/// <summary>
+	/// If the ImGui Context wants text input
+	/// </summary>
+	public bool WantsTextInput { get; private set; }
+
 	public Renderer(App app, string? customFontPath = null)
 	{
 		this.app = app;
@@ -223,6 +228,8 @@ public class Renderer : IDisposable
 			for (int i = 0; i < app.Input.Keyboard.Text.Length; i++)
 				io.AddInputCharacter(app.Input.Keyboard.Text[i]);
 		}
+
+		WantsTextInput = io.WantTextInput;
 
 		ImGui.NewFrame();
 	}

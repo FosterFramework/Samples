@@ -43,6 +43,12 @@ class Editor : App
 	{
 		imRenderer.BeginLayout();
 
+		// toggle text input if ImGui wants it
+		if (imRenderer.WantsTextInput)
+			Window.StartTextInput();
+		else
+			Window.StopTextInput();
+
 		ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Appearing);
 		if (ImGui.Begin("Hello Foster x Dear ImGui"))
 		{
