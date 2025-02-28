@@ -66,12 +66,15 @@ class Editor : App
 
 			// custom sprite batcher inside imgui window
 			ImGui.Text("Some Foster Sprite Batching:");
-			imRenderer.BeginBatch(out var batch, out var bounds);
+			var size = new Vector2(ImGui.GetContentRegionAvail().X, 200);
+			if (imRenderer.BeginBatch(size, out var batch, out var bounds))
+			{
+				batch.CheckeredPattern(bounds, 16, 16, Color.DarkGray, Color.Gray);
+				batch.Circle(bounds.Center, 32, 16, Color.Red);
+			}
+			imRenderer.EndBatch();
 
-			batch.CheckeredPattern(bounds, 16, 16, Color.DarkGray, Color.Gray);
-			batch.Circle(bounds.Center, 32, 16, Color.Red);
-
-			imRenderer.EndBatch();			
+			ImGui.Text("That weas pretty cool!");	
 		}
 		ImGui.End();
 

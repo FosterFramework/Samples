@@ -246,13 +246,28 @@ public class Renderer : IDisposable
 	}
 
 	/// <summary>
-	/// Begin a new Batch in an ImGui Window
+	/// Begin a new Batch in an ImGui Window. Returns true if any batch contents
+	/// will be visible. Call <see cref="EndBatch"/> regardless of return value.
 	/// </summary>
-	public void BeginBatch(out Batcher batch, out Rect bounds)
+	public bool BeginBatch(out Batcher batch, out Rect bounds)
+	{
+		return BeginBatch(ImGui.GetContentRegionAvail(), out batch, out bounds);
+	}
+
+	/// <summary>
+	/// Begin a new Batch in an ImGui Window. Returns true if any batch contents
+	/// will be visible. Call <see cref="EndBatch"/> regardless of return value.
+	/// </summary>
+	public bool BeginBatch(Vector2 size, out Batcher batch, out Rect bounds)
 	{
 		var min = ImGui.GetCursorScreenPos();
-		var max = min + ImGui.GetContentRegionAvail();
+		var max = min + size;
 		var screenspace = Rect.Between(min, max);
+		var clip = Rect.Between(ImGui.GetWindowDrawList().GetClipRectMin(), ImGui.GetWindowDrawList().GetClipRectMax());
+		var scissor = screenspace.GetIntersection(clip).Scale(Scale).Int();
+
+		// create a dummy element of the given size
+		ImGui.Dummy(size);
 
 		// get recycled batcher, add to list
 		batch = batcherPool.Count > 0 ? batcherPool.Pop() : new Batcher(app.GraphicsDevice);
@@ -263,11 +278,13 @@ public class Renderer : IDisposable
 		ImGui.GetWindowDrawList().AddCallback(new IntPtr(batchersUsed.Count), new IntPtr(0));
 
 		// push relative coords
-		batch.PushScissor(screenspace.Scale(Scale).Int());
+		batch.PushScissor(scissor);
 		batch.PushMatrix(Matrix3x2.CreateScale(Scale));
 		batch.PushMatrix(screenspace.TopLeft);
 
 		bounds = new Rect(0, 0, screenspace.Width, screenspace.Height);
+
+		return scissor.Width > 0 && scissor.Height > 0;
 	}
 
 	/// <summary>
@@ -322,32 +339,30 @@ public class Renderer : IDisposable
 			var commands = (ImDrawCmd*)list.CmdBuffer.Data;
 			for (ImDrawCmd* cmd = commands; cmd < commands + list.CmdBuffer.Size; cmd++)
 			{
+				var scissor = new Rect(
+					cmd->ClipRect.X,
+					cmd->ClipRect.Y,
+					cmd->ClipRect.Z - cmd->ClipRect.X,
+					cmd->ClipRect.W - cmd->ClipRect.Y).Scale(data.FramebufferScale).Int();
+
+				if (scissor.Width <= 0 || scissor.Height <= 0)
+					continue;
+
 				if (cmd->UserCallback != IntPtr.Zero)
 				{
 					var batchIndex = cmd->UserCallback.ToInt32() - 1;
 					if (batchIndex >= 0 && batchIndex < batchersUsed.Count)
-					{
-						batchersUsed[batchIndex].Render(app.Window);
-					}
+						batchersUsed[batchIndex].Render(app.Window, viewport: null, scissor: scissor);
 				}
 				else
 				{
-					// set texture
 					var textureIndex = cmd->TextureId.ToInt32();
 					if (textureIndex < boundTextures.Count)
 						material.Fragment.Samplers[0] = new(boundTextures[textureIndex], new());
 
 					pass.MeshIndexStart = (int)cmd->IdxOffset;
 					pass.MeshIndexCount = (int)cmd->ElemCount;
-					pass.Scissor = (RectInt)new Rect(
-						cmd->ClipRect.X,
-						cmd->ClipRect.Y,
-						(cmd->ClipRect.Z - cmd->ClipRect.X),
-						(cmd->ClipRect.W - cmd->ClipRect.Y)).Scale(data.FramebufferScale);
-
-					if (pass.Scissor.Value.Width <= 0 ||
-						pass.Scissor.Value.Height <= 0)
-						continue;
+					pass.Scissor = scissor;
 
 					app.GraphicsDevice.Draw(pass);
 				}
