@@ -14,6 +14,7 @@ public class Renderer : IDisposable
 	private readonly Texture fontTexture;
 	private readonly List<Texture> boundTextures = [];
 	private readonly List<Batcher> batchersUsed = [];
+	private readonly Stack<Batcher> batchersStack = [];
 	private readonly Stack<Batcher> batcherPool = [];
 	private readonly List<(ImGuiKey, Keys)> keys =
 	[
@@ -192,6 +193,7 @@ public class Renderer : IDisposable
 		boundTextures.Clear();
 
 		// clear batches
+		batchersStack.Clear();
 		batchersUsed.ForEach(batcherPool.Push);
 		batchersUsed.Clear();
 
@@ -273,6 +275,7 @@ public class Renderer : IDisposable
 		batch = batcherPool.Count > 0 ? batcherPool.Pop() : new Batcher(app.GraphicsDevice);
 		batch.Clear();
 		batchersUsed.Add(batch);
+		batchersStack.Push(batch);
 
 		// notify imgui
 		ImGui.GetWindowDrawList().AddCallback(new IntPtr(batchersUsed.Count), new IntPtr(0));
@@ -292,7 +295,7 @@ public class Renderer : IDisposable
 	/// </summary>
 	public void EndBatch()
 	{
-		var batch = batchersUsed[^1];
+		var batch = batchersStack.Pop();
 		batch.PopMatrix();
 		batch.PopMatrix();
 		batch.PopScissor();
