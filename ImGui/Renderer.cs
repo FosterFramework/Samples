@@ -351,7 +351,7 @@ public class Renderer : IDisposable
 				indexCount += indexSrc.Length;
 			}
 
-			// begin GPU copy pass (upload buffers)
+			// upload buffers to mesh
 			mesh.SetVertices(vertices.AsSpan(0, vertexCount));
 			mesh.SetIndices(indices.AsSpan(0, indexCount));
 		}
