@@ -9,7 +9,7 @@ public class Renderer : IDisposable
 {
 	private readonly App app;
 	private readonly IntPtr context;
-	private readonly Mesh mesh;
+	private readonly Mesh<PosTexColVertex, ushort> mesh;
 	private readonly Material material;
 	private readonly Texture fontTexture;
 	private readonly List<Texture> boundTextures = [];
@@ -124,6 +124,9 @@ public class Renderer : IDisposable
 		(ImGuiKey.KeypadEnter, Keys.KeypadEnter),
 		(ImGuiKey.KeypadEqual, Keys.KeypadEquals),
 	];
+
+	private PosTexColVertex[] vertices = [];
+	private ushort[] indices = [];
 
 	/// <summary>
 	/// UI Scaling
@@ -316,6 +319,43 @@ public class Renderer : IDisposable
 			return;
 		}
 
+		// build vertex/index buffer lists
+		{
+			// calculate total size
+			var vertexCount = 0;
+			var indexCount = 0;
+			for (int i = 0; i < data.CmdListsCount; i ++)
+			{
+				vertexCount += data.CmdLists[i].VtxBuffer.Size;
+				indexCount += data.CmdLists[i].IdxBuffer.Size;
+			}
+
+			// make sure we have enough space
+			if (vertexCount > vertices.Length)
+				Array.Resize(ref vertices, vertexCount);
+			if (indexCount > indices.Length)
+				Array.Resize(ref indices, indexCount);
+
+			// copy data to arrays
+			vertexCount = indexCount = 0;
+			for (int i = 0; i < data.CmdListsCount; i ++)
+			{
+				var list = data.CmdLists[i];
+				var vertexSrc = new Span<PosTexColVertex>((void*)list.VtxBuffer.Data, list.VtxBuffer.Size);
+				var indexSrc = new Span<ushort>((void*)list.IdxBuffer.Data, list.IdxBuffer.Size);
+
+				vertexSrc.CopyTo(vertices.AsSpan()[vertexCount..]);
+				indexSrc.CopyTo(indices.AsSpan()[indexCount..]);
+
+				vertexCount += vertexSrc.Length;
+				indexCount += indexSrc.Length;
+			}
+
+			// begin GPU copy pass (upload buffers)
+			mesh.SetVertices(vertices.AsSpan(0, vertexCount));
+			mesh.SetIndices(indices.AsSpan(0, indexCount));
+		}
+
 		var size = new Point2(app.Window.WidthInPixels, app.Window.HeightInPixels);
 
 		// create pass
@@ -329,18 +369,15 @@ public class Renderer : IDisposable
 		material.Vertex.SetUniformBuffer(mat);
 
 		// draw imgui buffers to the screen
+		var globalVtxOffset = 0;
+		var globalIdxOffset = 0;
 		for (int i = 0; i < data.CmdListsCount; i++)
 		{
-			var list = data.CmdLists[i];
-
-			// update vertices
-			// TODO: do this once in one big buffer lol
-			mesh.SetVertices(list.VtxBuffer.Data, list.VtxBuffer.Size);
-			mesh.SetIndices(list.IdxBuffer.Data, list.IdxBuffer.Size);
+			var imList = data.CmdLists[i];
+			var imCommands = (ImDrawCmd*)imList.CmdBuffer.Data;
 
 			// draw each command
-			var commands = (ImDrawCmd*)list.CmdBuffer.Data;
-			for (ImDrawCmd* cmd = commands; cmd < commands + list.CmdBuffer.Size; cmd++)
+			for (ImDrawCmd* cmd = imCommands; cmd < imCommands + imList.CmdBuffer.Size; cmd++)
 			{
 				var scissor = new Rect(
 					cmd->ClipRect.X,
@@ -363,13 +400,17 @@ public class Renderer : IDisposable
 					if (textureIndex < boundTextures.Count)
 						material.Fragment.Samplers[0] = new(boundTextures[textureIndex], new());
 
-					pass.MeshIndexStart = (int)cmd->IdxOffset;
+					pass.MeshVertexOffset = (int)(cmd->VtxOffset + globalVtxOffset);
+					pass.MeshIndexStart = (int)(cmd->IdxOffset + globalIdxOffset);
 					pass.MeshIndexCount = (int)cmd->ElemCount;
 					pass.Scissor = scissor;
 
 					app.GraphicsDevice.Draw(pass);
 				}
 			}
+
+			globalVtxOffset += imList.VtxBuffer.Size;
+			globalIdxOffset += imList.IdxBuffer.Size;
 		}
 
 		ImGui.SetCurrentContext(nint.Zero);
