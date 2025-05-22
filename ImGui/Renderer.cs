@@ -400,9 +400,9 @@ public class Renderer : IDisposable
 					if (textureIndex < boundTextures.Count)
 						material.Fragment.Samplers[0] = new(boundTextures[textureIndex], new());
 
-					pass.MeshVertexOffset = (int)(cmd->VtxOffset + globalVtxOffset);
-					pass.MeshIndexStart = (int)(cmd->IdxOffset + globalIdxOffset);
-					pass.MeshIndexCount = (int)cmd->ElemCount;
+					pass.VertexOffset = (int)(cmd->VtxOffset + globalVtxOffset);
+					pass.IndexOffset = (int)(cmd->IdxOffset + globalIdxOffset);
+					pass.IndexCount = (int)cmd->ElemCount;
 					pass.Scissor = scissor;
 
 					app.GraphicsDevice.Draw(pass);

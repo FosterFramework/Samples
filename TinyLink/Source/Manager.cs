@@ -140,7 +140,8 @@ public class Manager : App
 		ApplicationName = "TinyLink",
 		WindowTitle = "TinyLink",
 		Width = 1280,
-		Height = 720
+		Height = 720,
+		Resizable = true
 	})
 	{
 		batcher = new(GraphicsDevice);

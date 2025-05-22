@@ -205,8 +205,8 @@ class Game : App
 		DrawCommand command = new(Window, mesh, material)
 		{
 			BlendMode = BlendMode.Premultiply,
-			MeshIndexStart = 0,
-			MeshIndexCount = count * 6
+			IndexOffset = 0,
+			IndexCount = count * 6
 		};
 
 		command.Submit(GraphicsDevice);

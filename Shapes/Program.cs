@@ -69,8 +69,8 @@ class Game : App
 
 		batch.PushMatrix(
 			new Vector2(Window.WidthInPixels, Window.HeightInPixels) / 2,
-			Vector2.One,
 			new Vector2(texture.Width, texture.Height) / 2,
+			Vector2.One,
 			(float)Time.Elapsed.TotalSeconds * 4.0f);
 
 		batch.Image(texture, Vector2.Zero, Color.White);

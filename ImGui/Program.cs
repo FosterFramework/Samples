@@ -23,7 +23,8 @@ class Editor : App
 		ApplicationName = "ImGuiExample",
 		WindowTitle = "Dear ImGui x Foster",
 		Width = 1280,
-		Height = 720
+		Height = 720,
+		Resizable = true
 	})
 	{
 		image = new Texture(GraphicsDevice, new Image("button.png"));
