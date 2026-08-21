@@ -1,6 +1,7 @@
 ﻿using Foster.Framework;
 using System.Diagnostics;
 using System.Numerics;
+using System.Reflection;
 
 namespace Froggymark;
 
@@ -36,14 +37,16 @@ class Game : App
 		Width: 1280,
 		Height: 720))
 	{
+		var location = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? Directory.GetCurrentDirectory();
+		
 		GraphicsDevice.VSync = true;
 		Window.Resizable = false;
 		UpdateMode = UpdateMode.UnlockedStep();
 
 		mesh = new(GraphicsDevice);
 		batcher = new(GraphicsDevice);
-		texture = new Texture(GraphicsDevice, new Image(Path.Join("Assets", "frog_knight.png")));
-		font = new SpriteFont(GraphicsDevice, Path.Join("Assets", "monogram.ttf"), 32);
+		texture = new Texture(GraphicsDevice, new Image(Path.Join(location, "Assets", "frog_knight.png")));
+		font = new SpriteFont(GraphicsDevice, Path.Join(location, "Assets", "monogram.ttf"), 32);
 		material = GraphicsDevice.Defaults.TexturedMaterial.Clone();
 
 		// We only need to initialize indices once, since we're only drawing quads

@@ -1,6 +1,7 @@
 using Foster.Framework;
 using System.Numerics;
 using ImGuiNET;
+using System.Reflection;
 
 namespace FosterImGui;
 
@@ -27,7 +28,8 @@ class Editor : App
 		Resizable = true
 	})
 	{
-		image = new Texture(GraphicsDevice, new Image("button.png"));
+		var location = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? Directory.GetCurrentDirectory();
+		image = new Texture(GraphicsDevice, new Image(Path.Combine(location, "button.png")));
 		imRenderer = new(this);
 	}
 

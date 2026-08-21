@@ -9,9 +9,10 @@ public class Renderer : IDisposable
 {
 	private readonly App app;
 	private readonly IntPtr context;
-	private readonly Mesh<PosTexColVertex, ushort> mesh;
-	private readonly Material material;
+	private readonly VertexBuffer<PosTexColVertex> vertexBuffer;
+	private readonly IndexBuffer<ushort> indexBuffer;
 	private readonly Texture fontTexture;
+	private readonly UniformBuffer uniforms = new();
 	private readonly List<Texture> boundTextures = [];
 	private readonly List<Batcher> batchersUsed = [];
 	private readonly Stack<Batcher> batchersStack = [];
@@ -176,8 +177,8 @@ public class Renderer : IDisposable
 		}
 
 		// create drawing resources
-		mesh = new Mesh<PosTexColVertex, ushort>(app.GraphicsDevice);
-		material = app.GraphicsDevice.Defaults.TexturedMaterial.Clone();
+		vertexBuffer = new(app.GraphicsDevice);
+		indexBuffer = new(app.GraphicsDevice);
 		ImGui.SetCurrentContext(nint.Zero);
 	}
 
@@ -351,22 +352,31 @@ public class Renderer : IDisposable
 				indexCount += indexSrc.Length;
 			}
 
-			// upload buffers to mesh
-			mesh.SetVertices(vertices.AsSpan(0, vertexCount));
-			mesh.SetIndices(indices.AsSpan(0, indexCount));
+			// upload buffers
+			vertexBuffer.Upload(vertices.AsSpan(0, vertexCount));
+			indexBuffer.Upload(indices.AsSpan(0, indexCount));
 		}
 
 		var size = new Point2(app.Window.WidthInPixels, app.Window.HeightInPixels);
 
-		// create pass
-		var pass = new DrawCommand(app.Window, mesh, material);
-		pass.BlendMode = new BlendMode(BlendOp.Add, BlendFactor.SrcAlpha, BlendFactor.OneMinusSrcAlpha);
-
-		// setup ortho matrix
-		Matrix4x4 mat =
+		var mat =
 			Matrix4x4.CreateScale(data.FramebufferScale.X, data.FramebufferScale.Y, 1.0f) *
 			Matrix4x4.CreateOrthographicOffCenter(0, size.X, size.Y, 0, 0.1f, 1000.0f);
-		material.Vertex.SetUniformBuffer(mat);
+		uniforms.Set(mat);
+
+		// create pass
+		var pass = new DrawCommand()
+		{
+			Target = app.Window,
+			VertexUniformBuffers = [uniforms],
+			VertexBuffers = [new(vertexBuffer, false)],
+			IndexBuffer = indexBuffer,
+			IndexCount = indexBuffer.Count,
+			InstanceCount = 1,
+			BlendMode = new BlendMode(BlendOp.Add, BlendFactor.SrcAlpha, BlendFactor.OneMinusSrcAlpha),
+			FragmentShader = app.GraphicsDevice.Defaults.TexturedMaterial.Fragment.Shader,
+			VertexShader = app.GraphicsDevice.Defaults.TexturedMaterial.Vertex.Shader,
+		};
 
 		// draw imgui buffers to the screen
 		var globalVtxOffset = 0;
@@ -398,7 +408,7 @@ public class Renderer : IDisposable
 				{
 					var textureIndex = cmd->TextureId.ToInt32();
 					if (textureIndex < boundTextures.Count)
-						material.Fragment.Samplers[0] = new(boundTextures[textureIndex], new());
+						pass.FragmentSamplers = [new(boundTextures[textureIndex], new())];
 
 					pass.VertexOffset = (int)(cmd->VtxOffset + globalVtxOffset);
 					pass.IndexOffset = (int)(cmd->IdxOffset + globalIdxOffset);
