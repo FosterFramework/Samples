@@ -12,7 +12,10 @@ public class Game
 	public const int TileSize = 8;
 
 	public readonly Manager Manager;
-	public readonly Controls Controls;
+	public readonly VirtualDevice Controls;
+	public readonly VirtualStick Move;
+	public readonly VirtualAction Jump;
+	public readonly VirtualAction Attack;
 	public readonly Batcher Batcher;
 	public readonly Target Screen;
 	public readonly List<Actor> Actors = [];
@@ -41,7 +44,21 @@ public class Game
 		Manager = manager;
 		Batcher = new(manager.GraphicsDevice, name: "GameBatcher");
 		Screen = new(manager.GraphicsDevice, Width, Height, name: "GameScreen");
-		Controls = new(manager.Input);
+		Controls = new(manager.Input, "Player");
+		Controls.IndexMode = VirtualDevice.IndexModes.AutomaticLatest;
+		Move = Controls.AddStick("Move", 
+			new StickBindingSet()
+				.AddArrowKeys()
+				.AddDPad()
+				.Add(Axes.LeftX, 0.25f, Axes.LeftY, 0.50f, 0.25f));
+		Jump = Controls.AddAction("Jump",
+		new ActionBindingSet()
+			.Add(Keys.X)
+			.Add(Buttons.South));
+		Attack = Controls.AddAction("Attack",
+		new ActionBindingSet()
+			.Add(Keys.C)
+			.Add(Buttons.West));
 
 		if (Assets.Rooms.TryGetValue(start, out room))
 		{

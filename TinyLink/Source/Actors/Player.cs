@@ -30,7 +30,6 @@ public class Player : Actor
 
 	public int Health = MaxHealth;
 	public States State;
-	public Controls Controls => Game.Controls;
 
 	private float stateDuration = 0;
 	private float jumpTimer = 0;
@@ -91,7 +90,7 @@ public class Player : Actor
 		{
 			Velocity.Y = JumpForce;
 			jumpTimer -= Time.Delta;
-			if (!Controls.Jump.Down)
+			if (!Game.Jump.Down)
 				jumpTimer = 0;
 		}
 
@@ -99,7 +98,7 @@ public class Player : Actor
 		if (!grounded)
 		{
 			float grav = Gravity;
-			if (State == States.Normal && MathF.Abs(Velocity.Y) < 20 && Controls.Jump.Down)
+			if (State == States.Normal && MathF.Abs(Velocity.Y) < 20 && Game.Jump.Down)
 				grav *= 0.40f;
 			Velocity.Y += grav * Time.Delta;
 		}
@@ -141,10 +140,10 @@ public class Player : Actor
 	public void NormalState()
 	{
 		// update ducking state
-		ducking = grounded && Controls.Move.IntValue.Y > 0;
+		ducking = grounded && Game.Move.IntValue.Y > 0;
 
 		// get input
-		var input = Controls.Move.IntValue.X;
+		var input = Game.Move.IntValue.X;
 		if (ducking)
 			input = 0;
 
@@ -183,7 +182,7 @@ public class Player : Actor
 		}
 		
 		// Start jumping
-		if (grounded && Controls.Jump.ConsumePress())
+		if (grounded && Game.Jump.ConsumePress())
 		{
 			Squish = new Vector2(0.65f, 1.4f);
 			StopX();
@@ -192,7 +191,7 @@ public class Player : Actor
 		}
 
 		// Begin Attack
-		if (Controls.Attack.ConsumePress())
+		if (Game.Attack.ConsumePress())
 		{
 			State = States.Attack;
 			if (grounded)
